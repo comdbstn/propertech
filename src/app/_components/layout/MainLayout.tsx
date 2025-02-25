@@ -1,45 +1,60 @@
 'use client';
 
 import { Box, Flex, useColorModeValue } from '@chakra-ui/react';
-import { ReactNode } from 'react';
 import Navigator from './Navigator';
+import AIConsultingPanel from '../ai/AIConsultingPanel';
+import KakaoMap from '../map/KakaoMap';
 
-interface MainLayoutProps {
-  children: ReactNode;
-  leftPanel: ReactNode;
-}
-
-export default function MainLayout({ children, leftPanel }: MainLayoutProps) {
-  const borderColor = useColorModeValue('gray.200', 'gray.700');
+export default function MainLayout() {
   const bgColor = useColorModeValue('gray.50', 'gray.900');
+  const borderColor = useColorModeValue('gray.200', 'gray.700');
 
   return (
-    <Box h="100vh" overflow="hidden">
-      {/* 네비게이터 */}
+    <Box minH="100vh" bg={bgColor}>
       <Navigator />
+      
+      {/* 메인 콘텐츠 */}
+      <Flex 
+        mt="60px" 
+        h="calc(100vh - 60px)" 
+        maxW="1600px" 
+        mx="auto"
+        px={6}
+        py={6}
+        gap={6}
+      >
+        {/* 왼쪽 패널 */}
+        <Flex 
+          direction="column" 
+          w="400px"
+          gap={6}
+        >
+          {/* AI 상담 패널 */}
+          <Box 
+            flex={1} 
+            bg={useColorModeValue('white', 'black')}
+            borderRadius="lg"
+            overflow="hidden"
+            border="1px solid"
+            borderColor={borderColor}
+            boxShadow="sm"
+          >
+            <AIConsultingPanel />
+          </Box>
+        </Flex>
 
-      {/* 메인 콘텐츠 영역 */}
-      <Flex mt="60px" h="calc(100vh - 60px)">
-        {/* 좌측 패널 - AI 상담 인터페이스 (30%) */}
-        <Box
-          w="30%"
-          h="100%"
-          borderRight="1px"
+        {/* 오른쪽 패널 */}
+        <Flex 
+          flex={1} 
+          bg={useColorModeValue('white', 'black')}
+          borderRadius="lg"
+          overflow="hidden"
+          border="1px solid"
           borderColor={borderColor}
-          bg="white"
+          boxShadow="sm"
         >
-          {leftPanel}
-        </Box>
-
-        {/* 우측 패널 - 지도 영역 (70%) */}
-        <Box
-          w="70%"
-          h="100%"
-          position="relative"
-          bg={bgColor}
-        >
-          {children}
-        </Box>
+          <KakaoMap />
+        </Flex>
       </Flex>
     </Box>
   );

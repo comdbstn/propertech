@@ -1,5 +1,5 @@
-import { Box, HStack, Button, Icon, Tooltip, useColorModeValue } from '@chakra-ui/react';
-import { FaHome, FaSearch, FaHeart, FaHistory, FaCog, FaChartLine } from 'react-icons/fa';
+import { Box, HStack, Button, Icon, Tooltip, useColorModeValue, Text, Flex } from '@chakra-ui/react';
+import { FaSearch, FaHeart, FaHistory, FaCog, FaChartLine } from 'react-icons/fa';
 import { useRouter } from 'next/navigation';
 
 export default function Navigator() {
@@ -9,11 +9,11 @@ export default function Navigator() {
     'linear(to-r, gray.900, gray.800)'
   );
   const borderColor = useColorModeValue('gray.200', 'gray.700');
-  const iconColor = 'black';
+  const textColor = useColorModeValue('black', 'white');
+  const mutedColor = useColorModeValue('gray.600', 'gray.400');
   const hoverBg = useColorModeValue('gray.100', 'gray.800');
 
   const navItems = [
-    { icon: FaHome, label: '홈', path: '/' },
     { icon: FaSearch, label: '매물 검색', path: '/search' },
     { icon: FaHeart, label: '관심 매물', path: '/favorites' },
     { icon: FaHistory, label: '검색 기록', path: '/history' },
@@ -31,41 +31,73 @@ export default function Navigator() {
       bgGradient={bgGradient}
       borderBottom="1px"
       borderColor={borderColor}
-      px={4}
+      px={6}
       zIndex={100}
       backdropFilter="blur(8px)"
       boxShadow="sm"
     >
-      <HStack h="100%" spacing={2} justify="center">
-        {navItems.map((item) => (
-          <Tooltip 
-            key={item.path} 
-            label={item.label} 
-            placement="bottom"
-            hasArrow
-            bg="black"
-            color="white"
-            fontFamily="var(--font-sans)"
-            fontSize="sm"
+      <Flex h="100%" justify="space-between" align="center" maxW="1600px" mx="auto">
+        {/* 로고 */}
+        <Button
+          variant="unstyled"
+          onClick={() => router.push('/')}
+          display="flex"
+          alignItems="center"
+          height="auto"
+          _hover={{ opacity: 0.8 }}
+        >
+          <Text
+            fontSize="xl"
+            fontWeight="bold"
+            fontFamily="var(--font-serif)"
+            color={textColor}
+            letterSpacing="-0.03em"
           >
-            <Button
-              variant="ghost"
-              p={3}
-              borderRadius="lg"
-              onClick={() => router.push(item.path)}
-              _hover={{ 
-                bg: hoverBg,
-                transform: 'translateY(-2px)',
-                transition: 'all 0.2s'
-              }}
-              color={iconColor}
-              transition="all 0.2s"
+            PROPER
+            <Text as="span" color="blue.500">
+              TECH
+            </Text>
+          </Text>
+        </Button>
+
+        {/* 네비게이션 메뉴 */}
+        <HStack spacing={1}>
+          {navItems.map((item) => (
+            <Tooltip 
+              key={item.path} 
+              label={item.label} 
+              placement="bottom"
+              hasArrow
+              bg={textColor}
+              color={useColorModeValue('white', 'black')}
+              fontFamily="var(--font-sans)"
+              fontSize="sm"
             >
-              <Icon as={item.icon} boxSize={5} />
-            </Button>
-          </Tooltip>
-        ))}
-      </HStack>
+              <Button
+                variant="ghost"
+                px={4}
+                py={6}
+                borderRadius="md"
+                onClick={() => router.push(item.path)}
+                _hover={{ 
+                  bg: hoverBg,
+                  transform: 'translateY(-1px)',
+                }}
+                color={mutedColor}
+                transition="all 0.2s"
+                display="flex"
+                gap={2}
+                fontSize="sm"
+              >
+                <Icon as={item.icon} boxSize={4} />
+                <Text display={{ base: 'none', lg: 'block' }}>
+                  {item.label}
+                </Text>
+              </Button>
+            </Tooltip>
+          ))}
+        </HStack>
+      </Flex>
     </Box>
   );
 } 
