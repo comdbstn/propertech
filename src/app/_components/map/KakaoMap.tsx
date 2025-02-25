@@ -443,9 +443,15 @@ export default function KakaoMap({ onMarkerClick, properties = [] }: KakaoMapPro
       return;
     }
 
-    if (!mapInstance.current) {
-      initializeMap();
-    }
+    const initMapWhenLoaded = () => {
+      if (window.kakao.maps.Map && !mapInstance.current) {
+        initializeMap();
+      } else {
+        setTimeout(initMapWhenLoaded, 100);
+      }
+    };
+
+    initMapWhenLoaded();
   }, [initializeMap]);
 
   // properties가 변경될 때만 마커와 오버레이 업데이트
