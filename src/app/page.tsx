@@ -1,8 +1,8 @@
 'use client';
 
-import MainLayout from './components/layout/MainLayout';
-import AIConsultingPanel from './components/ai/AIConsultingPanel';
-import KakaoMap from './components/map/KakaoMap';
+import MainLayout from './_components/layout/MainLayout';
+import AIConsultingPanel from './_components/ai/AIConsultingPanel';
+import KakaoMap from './_components/map/KakaoMap';
 import { Box } from '@chakra-ui/react';
 
 export default function Home() {
