@@ -119,6 +119,8 @@ declare global {
     kakao: {
       maps: KakaoMaps;
     };
+    kakaoMapLoaded: boolean;
+    initKakaoMap: () => void;
   }
 }
 
@@ -218,15 +220,10 @@ export default function KakaoMap({ onMarkerClick, properties = [] }: KakaoMapPro
 
     const position = new window.kakao.maps.LatLng(property.latitude, property.longitude);
     
-    // 마커 생성 - 메모리 최적화를 위해 이미지 마커 사용
+    // 마커 생성 - 기본 마커 사용
     const marker = new window.kakao.maps.Marker({
       position,
-      map: mode === 'property' ? map : null,
-      image: new window.kakao.maps.MarkerImage(
-        'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png',
-        new window.kakao.maps.Size(32, 32),
-        { offset: new window.kakao.maps.Point(16, 32) }
-      )
+      map: mode === 'property' ? map : null
     });
 
     // 오버레이 컨텐츠 - 스타일 최적화
@@ -443,15 +440,21 @@ export default function KakaoMap({ onMarkerClick, properties = [] }: KakaoMapPro
       return;
     }
 
-    const initMapWhenLoaded = () => {
-      if (window.kakao.maps.Map && !mapInstance.current) {
+    const checkMapLoaded = () => {
+      if (window.kakaoMapLoaded && !mapInstance.current) {
         initializeMap();
-      } else {
-        setTimeout(initMapWhenLoaded, 100);
+      } else if (!mapInstance.current) {
+        setTimeout(checkMapLoaded, 100);
       }
     };
 
-    initMapWhenLoaded();
+    checkMapLoaded();
+
+    return () => {
+      if (mapInstance.current) {
+        mapInstance.current = null;
+      }
+    };
   }, [initializeMap]);
 
   // properties가 변경될 때만 마커와 오버레이 업데이트

@@ -28,24 +28,31 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko" className={`${serif.variable} ${sans.variable}`}>
-      <body className={sans.className}>
-        <Script
-          src={`//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_API_KEY}`}
-          strategy="beforeInteractive"
+      <head>
+        <script
+          type="text/javascript"
+          src={`https://dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_API_KEY}&autoload=false`}
+          defer
         />
+      </head>
+      <body className={sans.className}>
         <Script
           id="kakao-init"
           strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
+        >
+          {`
+            window.kakaoMapLoaded = false;
+            window.initKakaoMap = function() {
               if (window.kakao && window.kakao.maps) {
-                window.kakao.maps.load(() => {
+                window.kakao.maps.load(function() {
                   console.log('카카오맵 API 로드 완료');
+                  window.kakaoMapLoaded = true;
                 });
               }
-            `,
-          }}
-        />
+            };
+            window.initKakaoMap();
+          `}
+        </Script>
         <Providers>{children}</Providers>
       </body>
     </html>
