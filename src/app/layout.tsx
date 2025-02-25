@@ -22,6 +22,11 @@ export default function RootLayout({
         <Script
           src={`//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_API_KEY}&libraries=services,clusterer&autoload=false`}
           strategy="beforeInteractive"
+          onLoad={() => {
+            window.kakao.maps.load(() => {
+              console.log('Kakao Maps loaded successfully');
+            });
+          }}
         />
       </head>
       <body className={inter.className}>
