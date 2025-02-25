@@ -11,6 +11,7 @@ import {
   Text,
   useColorModeValue,
   Tooltip,
+  HStack,
 } from '@chakra-ui/react';
 import { FaMapMarkerAlt, FaDrawPolygon } from 'react-icons/fa';
 
@@ -29,10 +30,15 @@ export default function MapControls({
   competitionFilter,
   onCompetitionFilterChange,
 }: MapControlsProps) {
-  const bgColor = useColorModeValue('white', 'gray.800');
+  const bgColor = useColorModeValue('white', 'black');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
-  const activeColor = useColorModeValue('blue.500', 'blue.300');
-  const inactiveColor = useColorModeValue('gray.500', 'gray.500');
+  const textColor = useColorModeValue('black', 'white');
+  const buttonBgColor = useColorModeValue('gray.100', 'gray.800');
+  const buttonHoverBgColor = useColorModeValue('gray.200', 'gray.700');
+  const activeButtonBgColor = useColorModeValue('black', 'white');
+  const activeButtonTextColor = useColorModeValue('white', 'black');
+  const sliderBgColor = useColorModeValue('gray.200', 'gray.700');
+  const sliderFilledBgColor = useColorModeValue('black', 'white');
 
   return (
     <Box
@@ -41,25 +47,40 @@ export default function MapControls({
       right={4}
       zIndex={2}
       bg={bgColor}
-      p={4}
+      p={6}
       borderRadius="lg"
       border="1px solid"
       borderColor={borderColor}
       boxShadow="lg"
+      backdropFilter="blur(8px)"
+      minW="240px"
     >
-      <VStack spacing={4} align="stretch">
+      <VStack spacing={6} align="stretch">
         <Box>
-          <Text mb={2} fontSize="sm" fontWeight="bold">
+          <Text 
+            mb={3} 
+            fontSize="sm" 
+            fontWeight="medium"
+            color={textColor}
+            letterSpacing="tight"
+          >
             보기 모드
           </Text>
-          <Box display="flex" gap={2}>
+          <HStack spacing={2}>
             <Button
               flex={1}
               size="sm"
               leftIcon={<FaMapMarkerAlt />}
-              colorScheme={mode === 'property' ? 'blue' : 'gray'}
-              variant={mode === 'property' ? 'solid' : 'outline'}
+              bg={mode === 'property' ? activeButtonBgColor : buttonBgColor}
+              color={mode === 'property' ? activeButtonTextColor : textColor}
+              _hover={{
+                bg: mode === 'property' ? activeButtonBgColor : buttonHoverBgColor,
+                transform: 'translateY(-1px)',
+              }}
               onClick={() => onModeChange('property')}
+              borderRadius="md"
+              fontWeight="medium"
+              transition="all 0.2s"
             >
               매물
             </Button>
@@ -67,17 +88,30 @@ export default function MapControls({
               flex={1}
               size="sm"
               leftIcon={<FaDrawPolygon />}
-              colorScheme={mode === 'territory' ? 'blue' : 'gray'}
-              variant={mode === 'territory' ? 'solid' : 'outline'}
+              bg={mode === 'territory' ? activeButtonBgColor : buttonBgColor}
+              color={mode === 'territory' ? activeButtonTextColor : textColor}
+              _hover={{
+                bg: mode === 'territory' ? activeButtonBgColor : buttonHoverBgColor,
+                transform: 'translateY(-1px)',
+              }}
               onClick={() => onModeChange('territory')}
+              borderRadius="md"
+              fontWeight="medium"
+              transition="all 0.2s"
             >
               영역
             </Button>
-          </Box>
+          </HStack>
         </Box>
 
         <Box>
-          <Text mb={2} fontSize="sm" fontWeight="bold">
+          <Text 
+            mb={3} 
+            fontSize="sm" 
+            fontWeight="medium"
+            color={textColor}
+            letterSpacing="tight"
+          >
             경쟁 강도 필터
           </Text>
           <Slider
@@ -87,15 +121,24 @@ export default function MapControls({
             value={competitionFilter * 100}
             onChange={(v) => onCompetitionFilterChange(v / 100)}
           >
-            <SliderTrack bg={inactiveColor}>
-              <SliderFilledTrack bg={activeColor} />
+            <SliderTrack bg={sliderBgColor}>
+              <SliderFilledTrack bg={sliderFilledBgColor} />
             </SliderTrack>
             <Tooltip
               label={`${Math.round(competitionFilter * 100)}%`}
               placement="top"
-              isOpen
+              bg={activeButtonBgColor}
+              color={activeButtonTextColor}
+              fontSize="xs"
+              hasArrow
             >
-              <SliderThumb boxSize={6} />
+              <SliderThumb 
+                boxSize={4}
+                bg={sliderFilledBgColor}
+                _focus={{
+                  boxShadow: 'none',
+                }}
+              />
             </Tooltip>
           </Slider>
         </Box>

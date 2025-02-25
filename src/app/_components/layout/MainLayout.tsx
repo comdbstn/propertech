@@ -6,12 +6,13 @@ import Navigator from './Navigator';
 import KakaoMap from '../map/KakaoMap';
 import PropertyList from '../property/PropertyList';
 import { AuctionProperty } from '@/app/_types/auction';
+import { generateDummyProperties } from '@/app/_utils/dummyData';
 
 export default function MainLayout() {
   const bgColor = useColorModeValue('gray.50', 'gray.900');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const [selectedProperty, setSelectedProperty] = useState<AuctionProperty | null>(null);
-  const [properties] = useState<AuctionProperty[]>([]);
+  const [properties] = useState<AuctionProperty[]>(() => generateDummyProperties(100));
 
   const handlePropertyClick = (property: AuctionProperty) => {
     setSelectedProperty(property);
@@ -63,6 +64,7 @@ export default function MainLayout() {
           boxShadow="sm"
         >
           <KakaoMap 
+            properties={properties}
             onMarkerClick={handleMapMarkerClick}
           />
         </Box>

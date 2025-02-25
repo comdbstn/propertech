@@ -95,6 +95,7 @@ declare global {
 
 interface KakaoMapProps {
   onMarkerClick?: (property: AuctionProperty) => void;
+  properties?: AuctionProperty[];
 }
 
 export interface Territory {
@@ -104,12 +105,11 @@ export interface Territory {
   competitionScore: number;
 }
 
-export default function KakaoMap({ onMarkerClick }: KakaoMapProps) {
+export default function KakaoMap({ onMarkerClick, properties = [] }: KakaoMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<KakaoMap | null>(null);
   const [markers, setMarkers] = useState<KakaoMarker[]>([]);
   const [overlays, setOverlays] = useState<KakaoOverlay[]>([]);
-  const [properties, setProperties] = useState<AuctionProperty[]>([]);
   const [territories, setTerritories] = useState<Territory[]>([]);
   const [mode, setMode] = useState<MapMode>('property');
   const [competitionFilter, setCompetitionFilter] = useState(0);
@@ -340,10 +340,6 @@ export default function KakaoMap({ onMarkerClick }: KakaoMapProps) {
       analyzeTerritories(map);
     });
 
-    // 더미 데이터 생성
-    const dummyProperties = generateDummyProperties(100);
-    setProperties(dummyProperties);
-
     // 기존 마커와 오버레이 제거
     markers.forEach(marker => marker.setMap(null));
     overlays.forEach(overlay => overlay.setMap(null));
@@ -352,7 +348,7 @@ export default function KakaoMap({ onMarkerClick }: KakaoMapProps) {
     const newMarkers: KakaoMarker[] = [];
     const newOverlays: KakaoOverlay[] = [];
 
-    dummyProperties.forEach(property => {
+    properties.forEach(property => {
       const { marker, overlay } = createMarkerAndOverlay(property, map);
       newMarkers.push(marker);
       newOverlays.push(overlay);
@@ -363,7 +359,7 @@ export default function KakaoMap({ onMarkerClick }: KakaoMapProps) {
 
     // 초기 영역 분석 실행
     analyzeTerritories(map);
-  }, []);
+  }, [properties]);
 
   useEffect(() => {
     if (!mapRef.current) return;
