@@ -28,13 +28,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko" className={`${serif.variable} ${sans.variable}`}>
-      <head>
+      <body className={sans.className}>
         <Script
-          src={`//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_API_KEY}&autoload=false`}
+          src={`https://dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_API_KEY}&autoload=false`}
           strategy="beforeInteractive"
         />
-      </head>
-      <body className={sans.className}>
         <Providers>{children}</Providers>
       </body>
     </html>
