@@ -126,7 +126,8 @@ export default function KakaoMap() {
 
     const loadKakaoMapScript = () => {
       const apiKey = process.env.NEXT_PUBLIC_KAKAO_MAP_API_KEY;
-      console.log('API Key:', apiKey); // 디버깅용 로그
+      console.log('환경 변수:', process.env);
+      console.log('API Key:', apiKey);
 
       if (!apiKey) {
         console.error('카카오맵 API 키가 설정되지 않았습니다.');
@@ -137,6 +138,9 @@ export default function KakaoMap() {
       const existingScript = document.querySelector('script[src*="dapi.kakao.com/v2/maps/sdk.js"]');
       if (existingScript) {
         console.log('카카오맵 스크립트가 이미 로드되어 있습니다.');
+        if (window.kakao?.maps) {
+          initializeMap();
+        }
         return;
       }
 
