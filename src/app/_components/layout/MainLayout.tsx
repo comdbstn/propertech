@@ -14,12 +14,12 @@ export default function MainLayout({ children, leftPanel }: MainLayoutProps) {
   const bgColor = useColorModeValue('gray.50', 'gray.900');
 
   return (
-    <Flex h="100vh" overflow="hidden">
+    <Box h="100vh" overflow="hidden">
       {/* 네비게이터 */}
       <Navigator />
 
       {/* 메인 콘텐츠 영역 */}
-      <Flex ml="60px" flex={1}>
+      <Flex mt="60px" h="calc(100vh - 60px)">
         {/* 좌측 패널 - AI 상담 인터페이스 (30%) */}
         <Box
           w="30%"
@@ -41,6 +41,6 @@ export default function MainLayout({ children, leftPanel }: MainLayoutProps) {
           {children}
         </Box>
       </Flex>
-    </Flex>
+    </Box>
   );
 } 

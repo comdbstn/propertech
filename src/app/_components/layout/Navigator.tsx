@@ -1,12 +1,15 @@
-import { Box, VStack, Button, Icon, Tooltip, useColorModeValue } from '@chakra-ui/react';
+import { Box, HStack, Button, Icon, Tooltip, useColorModeValue } from '@chakra-ui/react';
 import { FaHome, FaSearch, FaHeart, FaHistory, FaCog, FaChartLine } from 'react-icons/fa';
 import { useRouter } from 'next/navigation';
 
 export default function Navigator() {
   const router = useRouter();
-  const bgColor = useColorModeValue('white', 'gray.900');
+  const bgGradient = useColorModeValue(
+    'linear(to-r, white, gray.50)',
+    'linear(to-r, gray.900, gray.800)'
+  );
   const borderColor = useColorModeValue('gray.200', 'gray.700');
-  const iconColor = useColorModeValue('gray.700', 'gray.300');
+  const iconColor = 'black';
   const hoverBg = useColorModeValue('gray.100', 'gray.800');
 
   const navItems = [
@@ -21,24 +24,26 @@ export default function Navigator() {
   return (
     <Box
       position="fixed"
-      left={0}
       top={0}
-      h="100vh"
-      w="60px"
-      bg={bgColor}
-      borderRight="1px"
+      left={0}
+      right={0}
+      h="60px"
+      bgGradient={bgGradient}
+      borderBottom="1px"
       borderColor={borderColor}
-      py={6}
+      px={4}
       zIndex={100}
+      backdropFilter="blur(8px)"
+      boxShadow="sm"
     >
-      <VStack spacing={5}>
+      <HStack h="100%" spacing={2} justify="center">
         {navItems.map((item) => (
           <Tooltip 
             key={item.path} 
             label={item.label} 
-            placement="right"
+            placement="bottom"
             hasArrow
-            bg="gray.900"
+            bg="black"
             color="white"
             fontFamily="var(--font-sans)"
             fontSize="sm"
@@ -46,16 +51,21 @@ export default function Navigator() {
             <Button
               variant="ghost"
               p={3}
-              borderRadius="md"
+              borderRadius="lg"
               onClick={() => router.push(item.path)}
-              _hover={{ bg: hoverBg }}
+              _hover={{ 
+                bg: hoverBg,
+                transform: 'translateY(-2px)',
+                transition: 'all 0.2s'
+              }}
               color={iconColor}
+              transition="all 0.2s"
             >
               <Icon as={item.icon} boxSize={5} />
             </Button>
           </Tooltip>
         ))}
-      </VStack>
+      </HStack>
     </Box>
   );
 } 
