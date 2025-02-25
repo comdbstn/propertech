@@ -1,7 +1,7 @@
 'use client';
 
 import { Box } from '@chakra-ui/react';
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { AuctionProperty } from '@/app/_types/auction';
 import MapControls, { MapMode } from './MapControls';
 import TerritoryInfo from './TerritoryInfo';
@@ -64,6 +64,7 @@ interface KakaoOverlay {
 interface KakaoMarkerOptions {
   position: KakaoLatLng;
   map?: KakaoMap | null;
+  image?: any; // 임시로 any 타입 사용
 }
 
 interface KakaoOverlayOptions {
@@ -71,6 +72,7 @@ interface KakaoOverlayOptions {
   content: string;
   yAnchor: number;
   map?: KakaoMap | null;
+  zIndex?: number;
 }
 
 interface KakaoMapEvent {
@@ -87,6 +89,9 @@ interface KakaoMaps {
   Marker: new (options: KakaoMarkerOptions) => KakaoMarker;
   CustomOverlay: new (options: KakaoOverlayOptions) => KakaoOverlay;
   Polygon: new (path: KakaoLatLng[], options?: Partial<KakaoPolygonOptions>) => KakaoPolygon;
+  MarkerImage: any; // 임시로 any 타입 사용
+  Size: any; // 임시로 any 타입 사용
+  Point: any; // 임시로 any 타입 사용
   load(callback: () => void): void;
   event: KakaoMapEvent;
 }
@@ -122,40 +127,32 @@ export default function KakaoMap({ onMarkerClick, properties = [] }: KakaoMapPro
   const [selectedTerritory, setSelectedTerritory] = useState<Territory | null>(null);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
 
-  // 경쟁 강도 계산 함수
-  const calculateCompetitionScore = (properties: AuctionProperty[]): number => {
+  // 경쟁 강도 계산 함수 메모이제이션
+  const calculateCompetitionScore = useMemo(() => (properties: AuctionProperty[]): number => {
     if (properties.length === 0) return 0;
 
-    // 평균 가격 계산
     const avgPrice = properties.reduce((sum, prop) => sum + prop.minimumBidPrice, 0) / properties.length;
-    
-    // 감정가 대비 입찰가 비율 계산
     const avgPriceRatio = properties.reduce((sum, prop) => 
       sum + (prop.minimumBidPrice / prop.appraisedValue), 0) / properties.length;
-
-    // 단위면적당 가격 계산
     const avgPricePerArea = properties.reduce((sum, prop) => 
       sum + (prop.minimumBidPrice / (prop.totalArea || 1)), 0) / properties.length;
+    const densityScore = Math.min(properties.length / 5, 1);
 
-    // 매물 밀집도 (개수 기반)
-    const densityScore = Math.min(properties.length / 5, 1); // 5개 이상이면 최대 점수
-
-    // 종합 점수 계산 (0~1 사이 값)
     return (
       (avgPriceRatio * 0.3) + 
       (densityScore * 0.3) + 
       (Math.min(avgPrice / 1000000000, 1) * 0.2) + 
       (Math.min(avgPricePerArea / 20000000, 1) * 0.2)
     );
-  };
+  }, []);
 
-  // 영역 색상 계산 함수
-  const getColorByCompetitionScore = (score: number): string => {
-    // 빨간색(#FF0000)과 초록색(#00FF00) 사이의 색상 계산
-    const red = Math.round(score * 255);
-    const green = Math.round((1 - score) * 255);
-    return `#${red.toString(16).padStart(2, '0')}${green.toString(16).padStart(2, '0')}00`;
-  };
+  // 영역 색상 계산 함수 메모이제이션
+  const getColorByCompetitionScore = useMemo(() => (score: number): string => {
+    // 빨간색(높은 경쟁) -> 초록색(낮은 경쟁)
+    const red = Math.round(score * 255).toString(16).padStart(2, '0');
+    const green = Math.round((1 - score) * 255).toString(16).padStart(2, '0');
+    return `#${red}${green}00`;
+  }, []);
 
   // 마커와 오버레이 표시/숨김 처리
   useEffect(() => {
@@ -190,11 +187,11 @@ export default function KakaoMap({ onMarkerClick, properties = [] }: KakaoMapPro
     });
   }, [mode, territories, map, competitionFilter]);
 
-  // 영역 클릭 이벤트 처리
-  const handleTerritoryClick = (territory: Territory) => {
+  // 영역 클릭 핸들러 메모이제이션
+  const handleTerritoryClick = useCallback((territory: Territory) => {
     if (mode !== 'territory') return;
     setSelectedTerritory(territory);
-  };
+  }, [mode]);
 
   // 마커와 오버레이 생성 함수
   const createMarkerAndOverlay = useCallback((property: AuctionProperty, map: KakaoMap) => {
@@ -202,41 +199,57 @@ export default function KakaoMap({ onMarkerClick, properties = [] }: KakaoMapPro
 
     const position = new window.kakao.maps.LatLng(property.latitude, property.longitude);
     
-    // 마커 생성
+    // 마커 생성 - 메모리 최적화를 위해 이미지 마커 사용
     const marker = new window.kakao.maps.Marker({
       position,
       map: mode === 'property' ? map : null,
+      image: new window.kakao.maps.MarkerImage(
+        'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png',
+        new window.kakao.maps.Size(32, 32),
+        { offset: new window.kakao.maps.Point(16, 32) }
+      )
     });
 
-    // 오버레이 컨텐츠
+    // 오버레이 컨텐츠 - 스타일 최적화
     const content = `
       <div style="
         background: white;
-        padding: 8px 12px;
+        padding: 6px 10px;
         border-radius: 4px;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         border: 1px solid #e6e6e6;
-        font-size: 14px;
-        font-weight: bold;
+        font-size: 13px;
+        font-weight: 500;
         white-space: nowrap;
+        transform: translateZ(0);
+        will-change: transform;
       ">
         ${property.minimumBidPrice.toLocaleString()}만원
       </div>
     `;
 
-    // 오버레이 생성
+    // 오버레이 생성 - 성능 최적화를 위한 옵션 추가
     const overlay = new window.kakao.maps.CustomOverlay({
       content,
       position,
       map: mode === 'property' ? map : null,
       yAnchor: 2.2,
+      zIndex: 1
     });
 
-    // 마커 클릭 이벤트
-    if (marker) {
-      window.kakao.maps.event.addListener(marker, 'click', () => {
-        onMarkerClick?.(property);
-      });
+    // 이벤트 리스너 최적화
+    if (marker && onMarkerClick) {
+      const clickHandler = () => onMarkerClick(property);
+      window.kakao.maps.event.addListener(marker, 'click', clickHandler);
+      
+      // 메모리 누수 방지를 위한 이벤트 제거 함수 반환
+      return {
+        marker,
+        overlay,
+        cleanup: () => {
+          window.kakao.maps.event.removeListener(marker, 'click', clickHandler);
+        }
+      };
     }
 
     return { marker, overlay };
@@ -282,12 +295,14 @@ export default function KakaoMap({ onMarkerClick, properties = [] }: KakaoMapPro
     const newTerritories: Territory[] = [];
 
     Object.entries(grids).forEach(([key, props]) => {
+      // 최소 2개 이상의 매물이 있는 경우에만 영역 생성
       if (props.length < 2) return;
 
       const [latIndex, lngIndex] = key.split(',').map(Number);
       const centerLat = sw.getLat() + (latIndex + 0.5) * latInterval;
       const centerLng = sw.getLng() + (lngIndex + 0.5) * lngInterval;
 
+      // 영역의 경계 좌표 계산
       const path = [
         new window.kakao.maps.LatLng(sw.getLat() + latIndex * latInterval, sw.getLng() + lngIndex * lngInterval),
         new window.kakao.maps.LatLng(sw.getLat() + (latIndex + 1) * latInterval, sw.getLng() + lngIndex * lngInterval),
@@ -298,16 +313,22 @@ export default function KakaoMap({ onMarkerClick, properties = [] }: KakaoMapPro
       const competitionScore = calculateCompetitionScore(props);
       const color = getColorByCompetitionScore(competitionScore);
 
-      const polygon = new window.kakao.maps.Polygon(path, {
+      // 영역 생성 및 스타일 설정
+      const polygon = new window.kakao.maps.Polygon({
+        path,
         strokeWeight: 2,
         strokeColor: color,
-        strokeOpacity: mode === 'territory' ? 0.5 : 0.2,
+        strokeOpacity: mode === 'territory' ? 0.8 : 0.4,
         fillColor: color,
-        fillOpacity: mode === 'territory' ? 0.5 : 0.2,
+        fillOpacity: mode === 'territory' ? 0.5 : 0.3,
       });
 
-      polygon.setMap(competitionScore >= competitionFilter ? map : null);
+      // 경쟁 강도 필터 적용
+      if (competitionScore >= competitionFilter) {
+        polygon.setMap(map);
+      }
 
+      // 클릭 이벤트 핸들러 등록
       window.kakao.maps.event.addListener(polygon, 'click', () => {
         handleTerritoryClick({
           center: new window.kakao.maps.LatLng(centerLat, centerLng),
@@ -326,7 +347,7 @@ export default function KakaoMap({ onMarkerClick, properties = [] }: KakaoMapPro
     });
 
     setTerritories(newTerritories);
-  }, [mode, properties, competitionFilter, calculateCompetitionScore, getColorByCompetitionScore, handleTerritoryClick, territories]);
+  }, [mode, properties, competitionFilter, calculateCompetitionScore, getColorByCompetitionScore, handleTerritoryClick]);
 
   // 지도 초기화
   const initializeMap = useCallback(() => {
@@ -339,37 +360,58 @@ export default function KakaoMap({ onMarkerClick, properties = [] }: KakaoMapPro
       };
 
       const mapInstance = new window.kakao.maps.Map(mapRef.current, options);
+      
+      // 지도 컨트롤 추가 - 성능 최적화
+      const zoomControl = new window.kakao.maps.ZoomControl();
+      const mapTypeControl = new window.kakao.maps.MapTypeControl();
+      mapInstance.addControl(zoomControl, window.kakao.maps.ControlPosition.RIGHT);
+      mapInstance.addControl(mapTypeControl, window.kakao.maps.ControlPosition.TOPRIGHT);
+
       setMap(mapInstance);
       setIsMapLoaded(true);
 
-      // 이벤트 리스너 등록
-      window.kakao.maps.event.addListener(mapInstance, 'zoom_changed', () => {
-        analyzeTerritories(mapInstance);
-      });
+      // 디바운스된 이벤트 핸들러
+      let timeoutId: NodeJS.Timeout;
+      const handleMapChange = () => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+          analyzeTerritories(mapInstance);
+        }, 300);
+      };
 
-      window.kakao.maps.event.addListener(mapInstance, 'dragend', () => {
-        analyzeTerritories(mapInstance);
-      });
+      // 이벤트 리스너 등록
+      window.kakao.maps.event.addListener(mapInstance, 'zoom_changed', handleMapChange);
+      window.kakao.maps.event.addListener(mapInstance, 'dragend', handleMapChange);
 
       // 기존 마커와 오버레이 제거
       markers.forEach(marker => marker?.setMap(null));
       overlays.forEach(overlay => overlay?.setMap(null));
 
-      // 새로운 마커와 오버레이 생성
+      // 새로운 마커와 오버레이 생성 - 배치 처리
       const newMarkers: KakaoMarker[] = [];
       const newOverlays: KakaoOverlay[] = [];
+      const cleanupFunctions: Array<() => void> = [];
 
       properties.forEach(property => {
-        const { marker, overlay } = createMarkerAndOverlay(property, mapInstance);
-        if (marker && overlay) {
-          newMarkers.push(marker);
-          newOverlays.push(overlay);
+        const result = createMarkerAndOverlay(property, mapInstance);
+        if (result.marker && result.overlay) {
+          newMarkers.push(result.marker);
+          newOverlays.push(result.overlay);
+          if (result.cleanup) {
+            cleanupFunctions.push(result.cleanup);
+          }
         }
       });
 
       setMarkers(newMarkers);
       setOverlays(newOverlays);
       analyzeTerritories(mapInstance);
+
+      // 클린업 함수 반환
+      return () => {
+        clearTimeout(timeoutId);
+        cleanupFunctions.forEach(cleanup => cleanup());
+      };
     } catch (error) {
       console.error('지도 초기화 중 오류 발생:', error);
     }
