@@ -85,11 +85,23 @@ export default function PropertyList({ properties, selectedId, onPropertyClick }
                   borderColor={borderColor}
                 >
                   <Image
-                    src={property.images?.[0] || 'https://via.placeholder.com/500x300?text=No+Image'}
+                    src={property.images?.[0] || '/images/no-image.png'}
                     alt={property.address}
                     w="100%"
                     h="100%"
                     objectFit="cover"
+                    fallback={
+                      <Box
+                        w="100%"
+                        h="100%"
+                        bg={useColorModeValue('gray.100', 'gray.700')}
+                        display="flex"
+                        alignItems="center"
+                        justifyContent="center"
+                      >
+                        <Text fontSize="sm" color={mutedColor}>이미지 없음</Text>
+                      </Box>
+                    }
                   />
                 </Box>
 

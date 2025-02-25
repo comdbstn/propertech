@@ -31,7 +31,8 @@ export default function RootLayout({
       <head>
         <script
           type="text/javascript"
-          src={`https://dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_API_KEY}&autoload=false`}
+          src={`https://dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_API_KEY}`}
+          async
           defer
         />
       </head>
@@ -39,20 +40,25 @@ export default function RootLayout({
         <Script
           id="kakao-init"
           strategy="afterInteractive"
-        >
-          {`
-            window.kakaoMapLoaded = false;
-            window.initKakaoMap = function() {
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.kakaoMapLoaded = false;
+              window.initKakaoMap = function() {
+                if (window.kakao && window.kakao.maps) {
+                  window.kakao.maps.load(() => {
+                    console.log('카카오맵 API 로드 완료');
+                    window.kakaoMapLoaded = true;
+                  });
+                }
+              };
               if (window.kakao && window.kakao.maps) {
-                window.kakao.maps.load(function() {
-                  console.log('카카오맵 API 로드 완료');
-                  window.kakaoMapLoaded = true;
-                });
+                window.initKakaoMap();
+              } else {
+                document.addEventListener('kakao:loaded', window.initKakaoMap);
               }
-            };
-            window.initKakaoMap();
-          `}
-        </Script>
+            `
+          }}
+        />
         <Providers>{children}</Providers>
       </body>
     </html>
