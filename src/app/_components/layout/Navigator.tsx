@@ -14,6 +14,9 @@ export default function Navigator() {
   const hoverBg = useColorModeValue('gray.100', 'gray.800');
   const tooltipBg = textColor;
   const tooltipColor = useColorModeValue('white', 'black');
+  const logoBg = useColorModeValue('black', 'white');
+  const logoColor = useColorModeValue('white', 'black');
+  const logoTextAccent = useColorModeValue('black', 'white');
 
   const navItems = [
     { icon: FaSearch, label: '매물 검색', path: '/search' },
@@ -50,14 +53,14 @@ export default function Navigator() {
           gap={2}
         >
           <Box
-            bg="blue.500"
+            bg={logoBg}
             w="32px"
             h="32px"
             display="flex"
             alignItems="center"
             justifyContent="center"
             borderRadius="md"
-            color="white"
+            color={logoColor}
           >
             <Icon as={FaBuilding} boxSize={5} />
           </Box>
@@ -69,7 +72,7 @@ export default function Navigator() {
             letterSpacing="-0.03em"
           >
             PROPER
-            <Text as="span" color="blue.500">
+            <Text as="span" color={logoTextAccent}>
               TECH
             </Text>
           </Text>
