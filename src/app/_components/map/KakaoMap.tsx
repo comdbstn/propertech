@@ -75,6 +75,8 @@ export default function KakaoMap() {
 
       try {
         window.kakao.maps.load(() => {
+          if (!mapRef.current) return;
+
           const center = new window.kakao.maps.LatLng(37.566826, 126.978656);
           const options: KakaoMapOptions = {
             center,
