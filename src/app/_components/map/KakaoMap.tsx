@@ -360,6 +360,29 @@ export default function KakaoMap({ onMarkerClick, properties = [] }: KakaoMapPro
     setTerritories(newTerritories);
   }, [mode, properties, competitionFilter, calculateCompetitionScore, getColorByCompetitionScore, handleTerritoryClick, territories]);
 
+  // 마커와 오버레이 생성
+  const createMarkersAndOverlays = useCallback(() => {
+    if (!mapInstance.current) return;
+
+    // 기존 마커와 오버레이 제거
+    markers.forEach(marker => marker?.setMap(null));
+    overlays.forEach(overlay => overlay?.setMap(null));
+
+    const newMarkers: KakaoMarker[] = [];
+    const newOverlays: KakaoOverlay[] = [];
+
+    properties.forEach(property => {
+      const result = createMarkerAndOverlay(property, mapInstance.current!);
+      if (result.marker && result.overlay) {
+        newMarkers.push(result.marker);
+        newOverlays.push(result.overlay);
+      }
+    });
+
+    setMarkers(newMarkers);
+    setOverlays(newOverlays);
+  }, [properties, createMarkerAndOverlay, markers, overlays]);
+
   // 지도 초기화
   const initializeMap = useCallback(() => {
     if (!mapRef.current || !window.kakao?.maps || mapInstance.current) return;
@@ -408,30 +431,7 @@ export default function KakaoMap({ onMarkerClick, properties = [] }: KakaoMapPro
     } catch (error) {
       console.error('지도 초기화 중 오류 발생:', error);
     }
-  }, [analyzeTerritories]);
-
-  // 마커와 오버레이 생성
-  const createMarkersAndOverlays = useCallback(() => {
-    if (!mapInstance.current) return;
-
-    // 기존 마커와 오버레이 제거
-    markers.forEach(marker => marker?.setMap(null));
-    overlays.forEach(overlay => overlay?.setMap(null));
-
-    const newMarkers: KakaoMarker[] = [];
-    const newOverlays: KakaoOverlay[] = [];
-
-    properties.forEach(property => {
-      const result = createMarkerAndOverlay(property, mapInstance.current!);
-      if (result.marker && result.overlay) {
-        newMarkers.push(result.marker);
-        newOverlays.push(result.overlay);
-      }
-    });
-
-    setMarkers(newMarkers);
-    setOverlays(newOverlays);
-  }, [properties, createMarkerAndOverlay]);
+  }, [analyzeTerritories, createMarkersAndOverlays]);
 
   // 카카오맵 로드
   useEffect(() => {

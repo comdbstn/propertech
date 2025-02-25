@@ -17,6 +17,7 @@ export default function PropertyList({ properties, selectedId, onPropertyClick }
   const textColor = useColorModeValue('black', 'white');
   const mutedColor = useColorModeValue('gray.600', 'gray.400');
   const selectedBgColor = useColorModeValue('blue.50', 'blue.900');
+  const fallbackBgColor = useColorModeValue('gray.100', 'gray.700');
 
   const formatPrice = (price: number) => {
     const billion = Math.floor(price / 100000000);
@@ -94,7 +95,7 @@ export default function PropertyList({ properties, selectedId, onPropertyClick }
                       <Box
                         w="100%"
                         h="100%"
-                        bg={useColorModeValue('gray.100', 'gray.700')}
+                        bg={fallbackBgColor}
                         display="flex"
                         alignItems="center"
                         justifyContent="center"
