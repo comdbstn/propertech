@@ -1,10 +1,20 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Noto_Serif_KR, Noto_Sans_KR } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 import Script from "next/script";
 
-const inter = Inter({ subsets: ["latin"] });
+const serif = Noto_Serif_KR({ 
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-serif',
+});
+
+const sans = Noto_Sans_KR({
+  subsets: ['latin'],
+  weight: ['400', '500', '700'],
+  variable: '--font-sans',
+});
 
 export const metadata: Metadata = {
   title: "PropTech AI",
@@ -17,7 +27,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko">
+    <html lang="ko" className={`${serif.variable} ${sans.variable}`}>
       <head>
         <Script
           src={`//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_API_KEY}&libraries=services,clusterer&autoload=false`}
@@ -29,7 +39,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={inter.className}>
+      <body className={sans.className}>
         <Providers>{children}</Providers>
       </body>
     </html>
