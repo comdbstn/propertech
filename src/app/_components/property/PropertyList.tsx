@@ -10,13 +10,10 @@ interface Property {
   imageUrl: string;
 }
 
-interface PropertyListProps {
-  properties: Property[];
-}
-
-export default function PropertyList({ properties }: PropertyListProps) {
+export default function PropertyList() {
   const bgColor = useColorModeValue('white', 'gray.900');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
+  const hoverBgColor = useColorModeValue('gray.50', 'gray.800');
 
   const formatPrice = (price: number) => {
     if (price >= 10000) {
@@ -64,7 +61,7 @@ export default function PropertyList({ properties }: PropertyListProps) {
               p={4}
               borderBottom="1px"
               borderColor={borderColor}
-              _hover={{ bg: useColorModeValue('gray.50', 'gray.800') }}
+              _hover={{ bg: hoverBgColor }}
               cursor="pointer"
               transition="all 0.2s"
             >
