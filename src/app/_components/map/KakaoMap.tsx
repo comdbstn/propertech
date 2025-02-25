@@ -68,7 +68,8 @@ export default function KakaoMap() {
 
   useEffect(() => {
     const initializeMap = () => {
-      if (!mapRef.current) {
+      const mapContainer = mapRef.current;
+      if (!mapContainer) {
         console.error('맵 컨테이너를 찾을 수 없습니다.');
         return;
       }
@@ -83,7 +84,7 @@ export default function KakaoMap() {
             level: 3
           };
 
-          const map = new maps.Map(mapRef.current, options);
+          const map = new maps.Map(mapContainer, options);
           mapInstanceRef.current = map;
 
           const zoomControl = new maps.ZoomControl();
