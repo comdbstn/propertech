@@ -12,6 +12,8 @@ export default function Navigator() {
   const textColor = useColorModeValue('black', 'white');
   const mutedColor = useColorModeValue('gray.600', 'gray.400');
   const hoverBg = useColorModeValue('gray.100', 'gray.800');
+  const tooltipBg = textColor;
+  const tooltipColor = useColorModeValue('white', 'black');
 
   const navItems = [
     { icon: FaSearch, label: '매물 검색', path: '/search' },
@@ -81,8 +83,8 @@ export default function Navigator() {
               label={item.label} 
               placement="bottom"
               hasArrow
-              bg={textColor}
-              color={useColorModeValue('white', 'black')}
+              bg={tooltipBg}
+              color={tooltipColor}
               fontFamily="var(--font-sans)"
               fontSize="sm"
             >
