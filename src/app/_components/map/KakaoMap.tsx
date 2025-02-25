@@ -12,6 +12,24 @@ interface KakaoLatLng {
   getLng(): number;
 }
 
+interface KakaoPoint {
+  x: number;
+  y: number;
+}
+
+interface KakaoSize {
+  width: number;
+  height: number;
+}
+
+interface KakaoMarkerImage {
+  src: string;
+  size: KakaoSize;
+  options?: {
+    offset: KakaoPoint;
+  };
+}
+
 interface KakaoMapBounds {
   getSouthWest(): KakaoLatLng;
   getNorthEast(): KakaoLatLng;
@@ -64,7 +82,7 @@ interface KakaoOverlay {
 interface KakaoMarkerOptions {
   position: KakaoLatLng;
   map?: KakaoMap | null;
-  image?: any; // 임시로 any 타입 사용
+  image?: KakaoMarkerImage;
 }
 
 interface KakaoOverlayOptions {
@@ -88,10 +106,10 @@ interface KakaoMaps {
   ControlPosition: KakaoControlPosition;
   Marker: new (options: KakaoMarkerOptions) => KakaoMarker;
   CustomOverlay: new (options: KakaoOverlayOptions) => KakaoOverlay;
-  Polygon: new (path: KakaoLatLng[], options?: Partial<KakaoPolygonOptions>) => KakaoPolygon;
-  MarkerImage: any; // 임시로 any 타입 사용
-  Size: any; // 임시로 any 타입 사용
-  Point: any; // 임시로 any 타입 사용
+  Polygon: new (options: KakaoPolygonOptions) => KakaoPolygon;
+  MarkerImage: new (src: string, size: KakaoSize, options?: { offset: KakaoPoint }) => KakaoMarkerImage;
+  Size: new (width: number, height: number) => KakaoSize;
+  Point: new (x: number, y: number) => KakaoPoint;
   load(callback: () => void): void;
   event: KakaoMapEvent;
 }
@@ -257,7 +275,7 @@ export default function KakaoMap({ onMarkerClick, properties = [] }: KakaoMapPro
 
   // 매물 클러스터링 및 영역 분석
   const analyzeTerritories = useCallback((map: KakaoMap) => {
-    if (!map || !window.kakao) return;
+    if (!map || !window.kakao?.maps) return;
 
     // 기존 영역 제거
     territories.forEach(territory => {
@@ -295,14 +313,12 @@ export default function KakaoMap({ onMarkerClick, properties = [] }: KakaoMapPro
     const newTerritories: Territory[] = [];
 
     Object.entries(grids).forEach(([key, props]) => {
-      // 최소 2개 이상의 매물이 있는 경우에만 영역 생성
       if (props.length < 2) return;
 
       const [latIndex, lngIndex] = key.split(',').map(Number);
       const centerLat = sw.getLat() + (latIndex + 0.5) * latInterval;
       const centerLng = sw.getLng() + (lngIndex + 0.5) * lngInterval;
 
-      // 영역의 경계 좌표 계산
       const path = [
         new window.kakao.maps.LatLng(sw.getLat() + latIndex * latInterval, sw.getLng() + lngIndex * lngInterval),
         new window.kakao.maps.LatLng(sw.getLat() + (latIndex + 1) * latInterval, sw.getLng() + lngIndex * lngInterval),
@@ -313,7 +329,6 @@ export default function KakaoMap({ onMarkerClick, properties = [] }: KakaoMapPro
       const competitionScore = calculateCompetitionScore(props);
       const color = getColorByCompetitionScore(competitionScore);
 
-      // 영역 생성 및 스타일 설정
       const polygon = new window.kakao.maps.Polygon({
         path,
         strokeWeight: 2,
@@ -323,12 +338,10 @@ export default function KakaoMap({ onMarkerClick, properties = [] }: KakaoMapPro
         fillOpacity: mode === 'territory' ? 0.5 : 0.3,
       });
 
-      // 경쟁 강도 필터 적용
       if (competitionScore >= competitionFilter) {
         polygon.setMap(map);
       }
 
-      // 클릭 이벤트 핸들러 등록
       window.kakao.maps.event.addListener(polygon, 'click', () => {
         handleTerritoryClick({
           center: new window.kakao.maps.LatLng(centerLat, centerLng),
@@ -347,7 +360,7 @@ export default function KakaoMap({ onMarkerClick, properties = [] }: KakaoMapPro
     });
 
     setTerritories(newTerritories);
-  }, [mode, properties, competitionFilter, calculateCompetitionScore, getColorByCompetitionScore, handleTerritoryClick]);
+  }, [mode, properties, competitionFilter, calculateCompetitionScore, getColorByCompetitionScore, handleTerritoryClick, territories]);
 
   // 지도 초기화
   const initializeMap = useCallback(() => {
@@ -419,22 +432,18 @@ export default function KakaoMap({ onMarkerClick, properties = [] }: KakaoMapPro
 
   // 카카오맵 로드
   useEffect(() => {
-    const loadKakaoMap = () => {
-      if (window.kakao?.maps) {
-        window.kakao.maps.load(() => {
-          console.log('카카오맵 API 로드 완료');
-          initializeMap();
-        });
-      } else {
-        console.error('카카오맵 API를 찾을 수 없습니다.');
-      }
-    };
+    if (!window.kakao?.maps) {
+      console.error('카카오맵 API를 찾을 수 없습니다.');
+      return;
+    }
 
-    const script = document.querySelector('script[src*="dapi.kakao.com"]');
-    if (script) {
-      loadKakaoMap();
+    if (window.kakao.maps.load) {
+      window.kakao.maps.load(() => {
+        console.log('카카오맵 API 로드 완료');
+        initializeMap();
+      });
     } else {
-      console.error('카카오맵 스크립트를 찾을 수 없습니다.');
+      initializeMap();
     }
   }, [initializeMap]);
 
