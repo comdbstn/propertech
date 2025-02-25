@@ -56,13 +56,13 @@ interface KakaoMapsInstance {
 
 declare global {
   interface Window {
-    kakao: KakaoMapsInstance;
+    kakao: any;
   }
 }
 
 export default function KakaoMap() {
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<KakaoMap | null>(null);
+  const mapInstanceRef = useRef<any>(null);
   const markerRef = useRef<KakaoMarker | null>(null);
   const overlayRef = useRef<KakaoOverlay | null>(null);
 
@@ -124,61 +124,49 @@ export default function KakaoMap() {
       }
     };
 
-    const loadKakaoMapScript = () => {
-      const apiKey = process.env.NEXT_PUBLIC_KAKAO_MAP_API_KEY;
-      console.log('환경 변수:', process.env);
-      console.log('API Key:', apiKey);
-
-      if (!apiKey) {
-        console.error('카카오맵 API 키가 설정되지 않았습니다.');
-        return;
-      }
-
-      // 이미 로드된 스크립트가 있는지 확인
-      const existingScript = document.querySelector('script[src*="dapi.kakao.com/v2/maps/sdk.js"]');
-      if (existingScript) {
-        console.log('카카오맵 스크립트가 이미 로드되어 있습니다.');
-        if (window.kakao?.maps) {
-          initializeMap();
-        }
-        return;
-      }
-
-      const script = document.createElement('script');
-      script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&autoload=false`;
-      script.async = true;
-
-      script.onload = () => {
-        console.log('카카오맵 스크립트 로드 성공');
-        if (window.kakao && window.kakao.maps) {
-          window.kakao.maps.load(() => {
-            console.log('카카오맵 API 초기화 성공');
-            initializeMap();
-          });
-        }
-      };
-
-      script.onerror = (error) => {
-        console.error('카카오맵 스크립트 로딩 실패:', error);
-      };
-
-      document.head.appendChild(script);
-    };
-
-    // 스크립트가 이미 로드되어 있는지 확인
-    if (window.kakao?.maps) {
-      console.log('카카오맵 이미 로드됨');
-      initializeMap();
-    } else {
-      loadKakaoMapScript();
+    // API 키 확인
+    const apiKey = "08bf2e5da0fce7640c90d3725130a327";
+    
+    if (!apiKey) {
+      console.error('카카오맵 API 키가 설정되지 않았습니다.');
+      return;
     }
 
+    // 스크립트가 이미 로드되어 있는지 확인
+    const script = document.querySelector('script[src*="dapi.kakao.com/v2/maps/sdk.js"]');
+    
+    if (script) {
+      // 이미 로드된 경우
+      if (window.kakao?.maps) {
+        initializeMap();
+      }
+      return;
+    }
+
+    // 스크립트 로드
+    const mapScript = document.createElement('script');
+    mapScript.async = true;
+    mapScript.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}`;
+
+    mapScript.addEventListener('load', () => {
+      window.kakao.maps.load(() => {
+        console.log('카카오맵 로드 완료');
+        initializeMap();
+      });
+    });
+
+    document.head.appendChild(mapScript);
+
+    // 클린업
     return () => {
       if (markerRef.current) {
         markerRef.current.setMap(null);
       }
       if (overlayRef.current) {
         overlayRef.current.setMap(null);
+      }
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current = null;
       }
     };
   }, []);
