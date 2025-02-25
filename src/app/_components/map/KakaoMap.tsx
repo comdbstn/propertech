@@ -61,6 +61,18 @@ interface KakaoOverlay {
   setMap(map: KakaoMap | null): void;
 }
 
+interface KakaoMarkerOptions {
+  position: KakaoLatLng;
+  map?: KakaoMap | null;
+}
+
+interface KakaoOverlayOptions {
+  position: KakaoLatLng;
+  content: string;
+  yAnchor: number;
+  map?: KakaoMap | null;
+}
+
 interface KakaoMapEvent {
   addListener(target: KakaoMarker | KakaoMap | KakaoPolygon, type: string, handler: () => void): void;
   removeListener(target: KakaoMarker | KakaoMap | KakaoPolygon, type: string, handler: () => void): void;
@@ -72,13 +84,8 @@ interface KakaoMaps {
   ZoomControl: new () => KakaoControl;
   MapTypeControl: new () => KakaoControl;
   ControlPosition: KakaoControlPosition;
-  Marker: new (options: { position: KakaoLatLng; map?: KakaoMap }) => KakaoMarker;
-  CustomOverlay: new (options: {
-    position: KakaoLatLng;
-    content: string;
-    yAnchor: number;
-    map?: KakaoMap;
-  }) => KakaoOverlay;
+  Marker: new (options: KakaoMarkerOptions) => KakaoMarker;
+  CustomOverlay: new (options: KakaoOverlayOptions) => KakaoOverlay;
   Polygon: new (path: KakaoLatLng[], options?: Partial<KakaoPolygonOptions>) => KakaoPolygon;
   load(callback: () => void): void;
   event: KakaoMapEvent;
@@ -113,6 +120,7 @@ export default function KakaoMap({ onMarkerClick, properties = [] }: KakaoMapPro
   const [mode, setMode] = useState<MapMode>('property');
   const [competitionFilter, setCompetitionFilter] = useState(0);
   const [selectedTerritory, setSelectedTerritory] = useState<Territory | null>(null);
+  const [isMapLoaded, setIsMapLoaded] = useState(false);
 
   // 경쟁 강도 계산 함수
   const calculateCompetitionScore = (properties: AuctionProperty[]): number => {
@@ -190,17 +198,19 @@ export default function KakaoMap({ onMarkerClick, properties = [] }: KakaoMapPro
 
   // 마커와 오버레이 생성 함수
   const createMarkerAndOverlay = useCallback((property: AuctionProperty, map: KakaoMap) => {
+    if (!window.kakao?.maps) return { marker: null, overlay: null };
+
     const position = new window.kakao.maps.LatLng(property.latitude, property.longitude);
     
     // 마커 생성
     const marker = new window.kakao.maps.Marker({
       position,
-      map: mode === 'property' ? map : undefined,
+      map: mode === 'property' ? map : null,
     });
 
     // 오버레이 컨텐츠
     const content = `
-      <div class="custom-overlay" style="
+      <div style="
         background: white;
         padding: 8px 12px;
         border-radius: 4px;
@@ -208,6 +218,7 @@ export default function KakaoMap({ onMarkerClick, properties = [] }: KakaoMapPro
         border: 1px solid #e6e6e6;
         font-size: 14px;
         font-weight: bold;
+        white-space: nowrap;
       ">
         ${property.minimumBidPrice.toLocaleString()}만원
       </div>
@@ -217,14 +228,16 @@ export default function KakaoMap({ onMarkerClick, properties = [] }: KakaoMapPro
     const overlay = new window.kakao.maps.CustomOverlay({
       content,
       position,
-      map: mode === 'property' ? map : undefined,
+      map: mode === 'property' ? map : null,
       yAnchor: 2.2,
     });
 
     // 마커 클릭 이벤트
-    window.kakao.maps.event.addListener(marker, 'click', () => {
-      onMarkerClick?.(property);
-    });
+    if (marker) {
+      window.kakao.maps.event.addListener(marker, 'click', () => {
+        onMarkerClick?.(property);
+      });
+    }
 
     return { marker, overlay };
   }, [mode, onMarkerClick]);
@@ -315,72 +328,72 @@ export default function KakaoMap({ onMarkerClick, properties = [] }: KakaoMapPro
     setTerritories(newTerritories);
   }, [mode, properties, competitionFilter, calculateCompetitionScore, getColorByCompetitionScore, handleTerritoryClick, territories]);
 
-  // initializeMap을 useCallback으로 감싸서 의존성 문제 해결
+  // 지도 초기화
   const initializeMap = useCallback(() => {
-    if (!mapRef.current) return;
+    if (!mapRef.current || !window.kakao?.maps) return;
 
-    const options = {
-      center: new window.kakao.maps.LatLng(37.5040, 127.0440),
-      level: 5,
+    try {
+      const options = {
+        center: new window.kakao.maps.LatLng(37.5040, 127.0440),
+        level: 5,
+      };
+
+      const mapInstance = new window.kakao.maps.Map(mapRef.current, options);
+      setMap(mapInstance);
+      setIsMapLoaded(true);
+
+      // 이벤트 리스너 등록
+      window.kakao.maps.event.addListener(mapInstance, 'zoom_changed', () => {
+        analyzeTerritories(mapInstance);
+      });
+
+      window.kakao.maps.event.addListener(mapInstance, 'dragend', () => {
+        analyzeTerritories(mapInstance);
+      });
+
+      // 기존 마커와 오버레이 제거
+      markers.forEach(marker => marker?.setMap(null));
+      overlays.forEach(overlay => overlay?.setMap(null));
+
+      // 새로운 마커와 오버레이 생성
+      const newMarkers: KakaoMarker[] = [];
+      const newOverlays: KakaoOverlay[] = [];
+
+      properties.forEach(property => {
+        const { marker, overlay } = createMarkerAndOverlay(property, mapInstance);
+        if (marker && overlay) {
+          newMarkers.push(marker);
+          newOverlays.push(overlay);
+        }
+      });
+
+      setMarkers(newMarkers);
+      setOverlays(newOverlays);
+      analyzeTerritories(mapInstance);
+    } catch (error) {
+      console.error('지도 초기화 중 오류 발생:', error);
+    }
+  }, [properties, analyzeTerritories, createMarkerAndOverlay, markers, overlays]);
+
+  // 카카오맵 로드
+  useEffect(() => {
+    const loadKakaoMap = () => {
+      if (window.kakao?.maps) {
+        window.kakao.maps.load(() => {
+          console.log('카카오맵 API 로드 완료');
+          initializeMap();
+        });
+      } else {
+        console.error('카카오맵 API를 찾을 수 없습니다.');
+      }
     };
 
-    const map = new window.kakao.maps.Map(mapRef.current, options);
-    setMap(map);
-
-    window.kakao.maps.event.addListener(map, 'zoom_changed', () => {
-      analyzeTerritories(map);
-    });
-
-    window.kakao.maps.event.addListener(map, 'dragend', () => {
-      analyzeTerritories(map);
-    });
-
-    markers.forEach(marker => marker.setMap(null));
-    overlays.forEach(overlay => overlay.setMap(null));
-
-    const newMarkers: KakaoMarker[] = [];
-    const newOverlays: KakaoOverlay[] = [];
-
-    properties.forEach(property => {
-      const { marker, overlay } = createMarkerAndOverlay(property, map);
-      newMarkers.push(marker);
-      newOverlays.push(overlay);
-    });
-
-    setMarkers(newMarkers);
-    setOverlays(newOverlays);
-
-    analyzeTerritories(map);
-  }, [properties, analyzeTerritories, createMarkerAndOverlay]);
-
-  useEffect(() => {
-    if (!mapRef.current) return;
-
-    const apiKey = process.env.NEXT_PUBLIC_KAKAO_MAP_API_KEY;
-    if (!apiKey) {
-      console.error('카카오맵 API 키가 설정되지 않았습니다.');
-      return;
-    }
-
-    const script = document.querySelector(`script[src*="kakao.maps.js"]`);
+    const script = document.querySelector('script[src*="dapi.kakao.com"]');
     if (script) {
-      console.log('카카오맵 스크립트가 이미 로드되어 있습니다.');
-      initializeMap();
-      return;
+      loadKakaoMap();
+    } else {
+      console.error('카카오맵 스크립트를 찾을 수 없습니다.');
     }
-
-    const mapScript = document.createElement('script');
-    mapScript.async = true;
-    mapScript.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&autoload=false`;
-
-    mapScript.addEventListener('load', () => {
-      window.kakao.maps.load(() => {
-        console.log('카카오맵 API가 로드되었습니다.');
-        initializeMap();
-      });
-    });
-
-    document.head.appendChild(mapScript);
   }, [initializeMap]);
 
   // 컴포넌트 언마운트 시 마커와 오버레이 제거
@@ -406,14 +419,18 @@ export default function KakaoMap({ onMarkerClick, properties = [] }: KakaoMapPro
         overflow="hidden"
         id="map"
       />
-      <MapControls
-        mode={mode}
-        onModeChange={setMode}
-        competitionFilter={competitionFilter}
-        onCompetitionFilterChange={setCompetitionFilter}
-      />
-      {selectedTerritory && mode === 'territory' && (
-        <TerritoryInfo territory={selectedTerritory} />
+      {isMapLoaded && (
+        <>
+          <MapControls
+            mode={mode}
+            onModeChange={setMode}
+            competitionFilter={competitionFilter}
+            onCompetitionFilterChange={setCompetitionFilter}
+          />
+          {selectedTerritory && mode === 'territory' && (
+            <TerritoryInfo territory={selectedTerritory} />
+          )}
+        </>
       )}
     </Box>
   );
