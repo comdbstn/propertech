@@ -29,20 +29,13 @@ export default function AIConsultingPanel() {
   ]);
   const [input, setInput] = useState('');
   
-  const bgGradient = useColorModeValue(
-    'linear(to-br, purple.50, white)',
-    'linear(to-br, purple.900, gray.900)'
-  );
-  const headerBgGradient = useColorModeValue(
-    'linear(to-r, purple.400, blue.500)',
-    'linear(to-r, purple.600, blue.700)'
-  );
-  const borderColor = useColorModeValue('purple.100', 'purple.700');
-  const bubbleBgUser = useColorModeValue('purple.500', 'purple.200');
-  const bubbleTextUser = useColorModeValue('white', 'gray.900');
-  const bubbleBgAI = useColorModeValue('gray.50', 'whiteAlpha.200');
-  const bubbleTextAI = useColorModeValue('gray.800', 'whiteAlpha.900');
-  const bubbleBorderAI = useColorModeValue('purple.100', 'purple.600');
+  const bgColor = useColorModeValue('white', 'black');
+  const borderColor = useColorModeValue('rgb(230, 230, 230)', 'rgb(38, 38, 38)');
+  const textColor = useColorModeValue('black', 'white');
+  const mutedColor = useColorModeValue('gray.600', 'gray.400');
+  const bubbleBgUser = useColorModeValue('black', 'white');
+  const bubbleTextUser = useColorModeValue('white', 'black');
+  const bubbleBgAI = useColorModeValue('rgb(245, 245, 245)', 'rgb(28, 28, 28)');
 
   const handleSendMessage = async () => {
     if (!input.trim()) return;
@@ -62,39 +55,28 @@ export default function AIConsultingPanel() {
   };
 
   return (
-    <Box h="100%" display="flex" flexDirection="column" bgGradient={bgGradient}>
-      {/* 로고 */}
-      <Box position="absolute" top={4} left={4} zIndex={2}>
+    <Box h="100%" display="flex" flexDirection="column" bg={bgColor}>
+      {/* 헤더 */}
+      <Box 
+        p={6} 
+        borderBottom="1px solid" 
+        borderColor={borderColor}
+      >
         <Heading
-          fontSize="xl"
-          bgGradient="linear(to-r, purple.400, blue.500)"
-          bgClip="text"
-          fontFamily="var(--font-serif)"
-          fontWeight="black"
+          fontSize="2xl"
+          color={textColor}
+          letterSpacing="-0.03em"
+          mb={1}
+        >
+          AI 부동산 상담사
+        </Heading>
+        <Text 
+          fontSize="sm" 
+          color={mutedColor}
           letterSpacing="-0.02em"
         >
-          PropTech AI
-        </Heading>
-      </Box>
-
-      {/* 헤더 */}
-      <Box p={6} pt={16} bgGradient={headerBgGradient}>
-        <HStack spacing={4}>
-          <Avatar 
-            icon={<FaRobot size={20} />} 
-            bg="whiteAlpha.900" 
-            color="purple.500"
-            size="md"
-          />
-          <VStack align="start" spacing={1}>
-            <Text color="white" fontFamily="var(--font-serif)" fontSize="xl" fontWeight="bold">
-              AI 부동산 상담사
-            </Text>
-            <Text fontSize="sm" color="whiteAlpha.900" fontFamily="var(--font-sans)">
-              실시간 맞춤형 투자 상담
-            </Text>
-          </VStack>
-        </HStack>
+          실시간 맞춤형 투자 상담
+        </Text>
       </Box>
 
       {/* 메시지 영역 */}
@@ -104,6 +86,7 @@ export default function AIConsultingPanel() {
         spacing={6}
         p={6}
         align="stretch"
+        className="minimal-scrollbar"
       >
         {messages.map((msg, idx) => (
           <Flex
@@ -113,24 +96,21 @@ export default function AIConsultingPanel() {
             {msg.role === 'assistant' && (
               <Avatar
                 size="sm"
-                icon={<FaRobot />}
-                bg="purple.500"
-                color="white"
-                mr={2}
+                icon={<FaRobot size={12} />}
+                bg={textColor}
+                color={bgColor}
+                mr={3}
               />
             )}
             <Box
               maxW="80%"
               p={4}
-              borderRadius="lg"
+              borderRadius="sm"
               bg={msg.role === 'user' ? bubbleBgUser : bubbleBgAI}
-              color={msg.role === 'user' ? bubbleTextUser : bubbleTextAI}
-              border="1px solid"
-              borderColor={msg.role === 'user' ? 'transparent' : bubbleBorderAI}
+              color={msg.role === 'user' ? bubbleTextUser : textColor}
               fontSize="sm"
-              letterSpacing="-0.01em"
-              lineHeight="1.7"
-              shadow="sm"
+              letterSpacing="-0.02em"
+              lineHeight="1.6"
             >
               <Text>{msg.content}</Text>
             </Box>
@@ -139,27 +119,35 @@ export default function AIConsultingPanel() {
       </VStack>
 
       {/* 입력 영역 */}
-      <Box p={4} borderTop="1px" borderColor={borderColor}>
+      <Box 
+        p={4} 
+        borderTop="1px solid" 
+        borderColor={borderColor}
+      >
         <HStack>
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="메시지를 입력하세요..."
             size="md"
-            borderRadius="full"
+            borderRadius="sm"
             borderColor={borderColor}
             _focus={{
-              borderColor: 'purple.400',
-              boxShadow: '0 0 0 1px var(--chakra-colors-purple-400)',
+              borderColor: textColor,
+              boxShadow: 'none',
             }}
             onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
           />
           <IconButton
             aria-label="Send message"
-            icon={<FaPaperPlane />}
+            icon={<FaPaperPlane size={14} />}
             onClick={handleSendMessage}
-            colorScheme="purple"
-            borderRadius="full"
+            bg={textColor}
+            color={bgColor}
+            borderRadius="sm"
+            _hover={{
+              opacity: 0.8,
+            }}
           />
         </HStack>
       </Box>
