@@ -3,7 +3,6 @@
 import { Box } from '@chakra-ui/react';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { AuctionProperty } from '@/app/_types/auction';
-import { generateDummyProperties } from '@/app/_utils/dummyData';
 import MapControls, { MapMode } from './MapControls';
 import TerritoryInfo from './TerritoryInfo';
 
@@ -190,7 +189,7 @@ export default function KakaoMap({ onMarkerClick, properties = [] }: KakaoMapPro
   };
 
   // 마커와 오버레이 생성 함수
-  const createMarkerAndOverlay = (property: AuctionProperty, map: KakaoMap) => {
+  const createMarkerAndOverlay = useCallback((property: AuctionProperty, map: KakaoMap) => {
     const position = new window.kakao.maps.LatLng(property.latitude, property.longitude);
     
     // 마커 생성
@@ -228,10 +227,10 @@ export default function KakaoMap({ onMarkerClick, properties = [] }: KakaoMapPro
     });
 
     return { marker, overlay };
-  };
+  }, [mode, onMarkerClick]);
 
   // 매물 클러스터링 및 영역 분석
-  const analyzeTerritories = (map: KakaoMap) => {
+  const analyzeTerritories = useCallback((map: KakaoMap) => {
     if (!map || !window.kakao) return;
 
     // 기존 영역 제거
@@ -247,7 +246,7 @@ export default function KakaoMap({ onMarkerClick, properties = [] }: KakaoMapPro
 
     // 지도 레벨에 따른 그리드 크기 조정
     const level = map.getLevel();
-    const gridSize = Math.max(2, Math.floor(10 - level)); // 줌 레벨에 따라 그리드 크기 조정
+    const gridSize = Math.max(2, Math.floor(10 - level));
 
     // 위도/경도 간격 계산
     const latInterval = (ne.getLat() - sw.getLat()) / gridSize;
@@ -270,13 +269,12 @@ export default function KakaoMap({ onMarkerClick, properties = [] }: KakaoMapPro
     const newTerritories: Territory[] = [];
 
     Object.entries(grids).forEach(([key, props]) => {
-      if (props.length < 2) return; // 최소 2개 이상의 매물이 있는 경우만 영역 생성
+      if (props.length < 2) return;
 
       const [latIndex, lngIndex] = key.split(',').map(Number);
       const centerLat = sw.getLat() + (latIndex + 0.5) * latInterval;
       const centerLng = sw.getLng() + (lngIndex + 0.5) * lngInterval;
 
-      // 영역의 꼭지점 계산
       const path = [
         new window.kakao.maps.LatLng(sw.getLat() + latIndex * latInterval, sw.getLng() + lngIndex * lngInterval),
         new window.kakao.maps.LatLng(sw.getLat() + (latIndex + 1) * latInterval, sw.getLng() + lngIndex * lngInterval),
@@ -297,7 +295,6 @@ export default function KakaoMap({ onMarkerClick, properties = [] }: KakaoMapPro
 
       polygon.setMap(competitionScore >= competitionFilter ? map : null);
 
-      // 영역 클릭 이벤트
       window.kakao.maps.event.addListener(polygon, 'click', () => {
         handleTerritoryClick({
           center: new window.kakao.maps.LatLng(centerLat, centerLng),
@@ -316,7 +313,7 @@ export default function KakaoMap({ onMarkerClick, properties = [] }: KakaoMapPro
     });
 
     setTerritories(newTerritories);
-  };
+  }, [mode, properties, competitionFilter, calculateCompetitionScore, getColorByCompetitionScore, handleTerritoryClick, territories]);
 
   // initializeMap을 useCallback으로 감싸서 의존성 문제 해결
   const initializeMap = useCallback(() => {
@@ -330,21 +327,17 @@ export default function KakaoMap({ onMarkerClick, properties = [] }: KakaoMapPro
     const map = new window.kakao.maps.Map(mapRef.current, options);
     setMap(map);
 
-    // 줌 이벤트 리스너 등록
     window.kakao.maps.event.addListener(map, 'zoom_changed', () => {
       analyzeTerritories(map);
     });
 
-    // 드래그 이벤트 리스너 등록
     window.kakao.maps.event.addListener(map, 'dragend', () => {
       analyzeTerritories(map);
     });
 
-    // 기존 마커와 오버레이 제거
     markers.forEach(marker => marker.setMap(null));
     overlays.forEach(overlay => overlay.setMap(null));
 
-    // 새로운 마커와 오버레이 생성
     const newMarkers: KakaoMarker[] = [];
     const newOverlays: KakaoOverlay[] = [];
 
@@ -357,9 +350,8 @@ export default function KakaoMap({ onMarkerClick, properties = [] }: KakaoMapPro
     setMarkers(newMarkers);
     setOverlays(newOverlays);
 
-    // 초기 영역 분석 실행
     analyzeTerritories(map);
-  }, [properties]);
+  }, [properties, analyzeTerritories, createMarkerAndOverlay]);
 
   useEffect(() => {
     if (!mapRef.current) return;
