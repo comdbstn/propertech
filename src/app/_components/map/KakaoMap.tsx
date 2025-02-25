@@ -3,9 +3,23 @@
 import { Box } from '@chakra-ui/react';
 import { useEffect, useRef } from 'react';
 
+interface KakaoMapType {
+  maps: {
+    LatLng: new (lat: number, lng: number) => { lat: number; lng: number };
+    Map: new (container: HTMLElement, options: any) => any;
+    Marker: new (options: any) => any;
+    CustomOverlay: new (options: any) => any;
+    ZoomControl: new () => any;
+    ControlPosition: {
+      RIGHT: any;
+    };
+    load: (callback: () => void) => void;
+  };
+}
+
 declare global {
   interface Window {
-    kakao: any;
+    kakao: KakaoMapType;
   }
 }
 
@@ -18,6 +32,7 @@ export default function KakaoMap() {
     const loadMap = () => {
       // 지도를 표시할 div
       const container = mapRef.current;
+      if (!container) return;
       
       // 지도의 중심좌표 (서울시청)
       const options = {
