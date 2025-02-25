@@ -66,6 +66,8 @@ declare global {
 export default function KakaoMap() {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<KakaoMap | null>(null);
+  const markerRef = useRef<{ setMap(map: KakaoMap | null): void } | null>(null);
+  const overlayRef = useRef<{ setMap(map: KakaoMap | null): void } | null>(null);
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -83,12 +85,14 @@ export default function KakaoMap() {
       const zoomControl = new window.kakao.maps.ZoomControl();
       map.addControl(zoomControl, window.kakao.maps.ControlPosition.RIGHT);
 
-      const marker = new window.kakao.maps.Marker({
+      // 마커 생성 및 저장
+      markerRef.current = new window.kakao.maps.Marker({
         position: center,
         map: map,
       });
 
-      const overlay = new window.kakao.maps.CustomOverlay({
+      // 오버레이 생성 및 저장
+      overlayRef.current = new window.kakao.maps.CustomOverlay({
         position: center,
         content: '<div style="padding:5px;background:white;border:1px solid #000;">서울시청</div>',
         yAnchor: 1.5,
@@ -100,6 +104,16 @@ export default function KakaoMap() {
     if (window.kakao && window.kakao.maps) {
       window.kakao.maps.load(initializeMap);
     }
+
+    // 컴포넌트 언마운트 시 정리
+    return () => {
+      if (markerRef.current) {
+        markerRef.current.setMap(null);
+      }
+      if (overlayRef.current) {
+        overlayRef.current.setMap(null);
+      }
+    };
   }, []);
 
   return (
