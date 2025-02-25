@@ -14,10 +14,7 @@ interface KakaoMapOptions {
   level: number;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-empty-interface
-interface KakaoControl {
-  // 컨트롤 인터페이스
-}
+type KakaoControl = object;
 
 interface KakaoControlPosition {
   RIGHT: number;
