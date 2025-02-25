@@ -10,6 +10,7 @@ import {
   useColorModeValue,
   IconButton,
   Flex,
+  Heading,
 } from '@chakra-ui/react';
 import { useState } from 'react';
 import { FaPaperPlane, FaRobot } from 'react-icons/fa';
@@ -39,7 +40,8 @@ export default function AIConsultingPanel() {
   const borderColor = useColorModeValue('purple.100', 'purple.700');
   const bubbleBgUser = useColorModeValue('purple.500', 'purple.200');
   const bubbleTextUser = useColorModeValue('white', 'gray.900');
-  const bubbleBgAI = useColorModeValue('white', 'whiteAlpha.200');
+  const bubbleBgAI = useColorModeValue('gray.50', 'whiteAlpha.200');
+  const bubbleTextAI = useColorModeValue('gray.800', 'whiteAlpha.900');
   const bubbleBorderAI = useColorModeValue('purple.100', 'purple.600');
 
   const handleSendMessage = async () => {
@@ -61,8 +63,22 @@ export default function AIConsultingPanel() {
 
   return (
     <Box h="100%" display="flex" flexDirection="column" bgGradient={bgGradient}>
+      {/* 로고 */}
+      <Box position="absolute" top={4} left={4} zIndex={2}>
+        <Heading
+          fontSize="xl"
+          bgGradient="linear(to-r, purple.400, blue.500)"
+          bgClip="text"
+          fontFamily="var(--font-serif)"
+          fontWeight="black"
+          letterSpacing="-0.02em"
+        >
+          PropTech AI
+        </Heading>
+      </Box>
+
       {/* 헤더 */}
-      <Box p={6} bgGradient={headerBgGradient}>
+      <Box p={6} pt={16} bgGradient={headerBgGradient}>
         <HStack spacing={4}>
           <Avatar 
             icon={<FaRobot size={20} />} 
@@ -108,7 +124,7 @@ export default function AIConsultingPanel() {
               p={4}
               borderRadius="lg"
               bg={msg.role === 'user' ? bubbleBgUser : bubbleBgAI}
-              color={msg.role === 'user' ? bubbleTextUser : 'inherit'}
+              color={msg.role === 'user' ? bubbleTextUser : bubbleTextAI}
               border="1px solid"
               borderColor={msg.role === 'user' ? 'transparent' : bubbleBorderAI}
               fontSize="sm"

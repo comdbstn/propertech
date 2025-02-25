@@ -74,44 +74,46 @@ export default function KakaoMap() {
       if (!mapRef.current || !window.kakao?.maps) return;
 
       try {
-        const center = new window.kakao.maps.LatLng(37.566826, 126.978656);
-        const options: KakaoMapOptions = {
-          center,
-          level: 3,
-        };
+        window.kakao.maps.load(() => {
+          const center = new window.kakao.maps.LatLng(37.566826, 126.978656);
+          const options: KakaoMapOptions = {
+            center,
+            level: 3,
+          };
 
-        const map = new window.kakao.maps.Map(mapRef.current, options);
-        mapInstanceRef.current = map;
+          const map = new window.kakao.maps.Map(mapRef.current, options);
+          mapInstanceRef.current = map;
 
-        const zoomControl = new window.kakao.maps.ZoomControl();
-        map.addControl(zoomControl, window.kakao.maps.ControlPosition.RIGHT);
+          const zoomControl = new window.kakao.maps.ZoomControl();
+          map.addControl(zoomControl, window.kakao.maps.ControlPosition.RIGHT);
 
-        markerRef.current = new window.kakao.maps.Marker({
-          position: center,
-          map: map,
-        });
+          markerRef.current = new window.kakao.maps.Marker({
+            position: center,
+            map: map,
+          });
 
-        const overlayContent = `
-          <div style="
-            padding: 5px 10px;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            border-radius: 4px;
-            font-size: 12px;
-            font-weight: bold;
-            white-space: nowrap;
-            transform: translateY(-100%);
-            margin-top: -10px;
-          ">
-            4억 4,000만
-          </div>
-        `;
+          const overlayContent = `
+            <div style="
+              padding: 5px 10px;
+              background: rgba(0, 0, 0, 0.8);
+              color: white;
+              border-radius: 4px;
+              font-size: 12px;
+              font-weight: bold;
+              white-space: nowrap;
+              transform: translateY(-100%);
+              margin-top: -10px;
+            ">
+              4억 4,000만
+            </div>
+          `;
 
-        overlayRef.current = new window.kakao.maps.CustomOverlay({
-          position: center,
-          content: overlayContent,
-          yAnchor: 1.0,
-          map: map,
+          overlayRef.current = new window.kakao.maps.CustomOverlay({
+            position: center,
+            content: overlayContent,
+            yAnchor: 1.0,
+            map: map,
+          });
         });
       } catch (error) {
         console.error('카카오맵 초기화 중 오류 발생:', error);
