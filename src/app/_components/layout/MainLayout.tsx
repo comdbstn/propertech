@@ -23,28 +23,21 @@ export default function MainLayout() {
         py={6}
         gap={6}
       >
-        {/* 왼쪽 패널 */}
-        <Flex 
-          direction="column" 
+        {/* 왼쪽 패널 - AI 상담 */}
+        <Box 
           w="400px"
-          gap={6}
+          bg={useColorModeValue('white', 'black')}
+          borderRadius="lg"
+          overflow="hidden"
+          border="1px solid"
+          borderColor={borderColor}
+          boxShadow="sm"
         >
-          {/* AI 상담 패널 */}
-          <Box 
-            flex={1} 
-            bg={useColorModeValue('white', 'black')}
-            borderRadius="lg"
-            overflow="hidden"
-            border="1px solid"
-            borderColor={borderColor}
-            boxShadow="sm"
-          >
-            <AIConsultingPanel />
-          </Box>
-        </Flex>
+          <AIConsultingPanel />
+        </Box>
 
-        {/* 오른쪽 패널 */}
-        <Flex 
+        {/* 오른쪽 패널 - 지도 */}
+        <Box 
           flex={1} 
           bg={useColorModeValue('white', 'black')}
           borderRadius="lg"
@@ -54,7 +47,7 @@ export default function MainLayout() {
           boxShadow="sm"
         >
           <KakaoMap />
-        </Flex>
+        </Box>
       </Flex>
     </Box>
   );
