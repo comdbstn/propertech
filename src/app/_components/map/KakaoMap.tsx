@@ -126,13 +126,22 @@ export default function KakaoMap() {
 
     const loadKakaoMapScript = () => {
       const apiKey = process.env.NEXT_PUBLIC_KAKAO_MAP_API_KEY;
+      console.log('API Key:', apiKey); // 디버깅용 로그
+
       if (!apiKey) {
         console.error('카카오맵 API 키가 설정되지 않았습니다.');
         return;
       }
 
+      // 이미 로드된 스크립트가 있는지 확인
+      const existingScript = document.querySelector('script[src*="dapi.kakao.com/v2/maps/sdk.js"]');
+      if (existingScript) {
+        console.log('카카오맵 스크립트가 이미 로드되어 있습니다.');
+        return;
+      }
+
       const script = document.createElement('script');
-      script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}`;
+      script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&autoload=false`;
       script.async = true;
 
       script.onload = () => {
