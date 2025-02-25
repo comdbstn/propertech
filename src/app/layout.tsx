@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Noto_Serif_KR, Noto_Sans_KR } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
+import Script from "next/script";
 
 const serif = Noto_Serif_KR({ 
   subsets: ['latin'],
@@ -27,6 +28,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ko" className={`${serif.variable} ${sans.variable}`}>
+      <head>
+        <Script
+          src={`//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_API_KEY}&autoload=false`}
+          strategy="beforeInteractive"
+        />
+      </head>
       <body className={sans.className}>
         <Providers>{children}</Providers>
       </body>
