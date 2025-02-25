@@ -3,15 +3,55 @@
 import { Box } from '@chakra-ui/react';
 import { useEffect, useRef } from 'react';
 
+interface KakaoMapOptions {
+  center: {
+    getLat(): number;
+    getLng(): number;
+  };
+  level: number;
+}
+
+interface MarkerOptions {
+  position: {
+    getLat(): number;
+    getLng(): number;
+  };
+  map?: KakaoMap;
+}
+
+interface CustomOverlayOptions {
+  position: {
+    getLat(): number;
+    getLng(): number;
+  };
+  content: string;
+  yAnchor: number;
+  map?: KakaoMap;
+}
+
+interface KakaoMap {
+  addControl(control: unknown, position: unknown): void;
+  getCenter(): { getLat(): number; getLng(): number };
+  getLevel(): number;
+  setLevel(level: number): void;
+}
+
 interface KakaoMapType {
   maps: {
-    LatLng: new (lat: number, lng: number) => { lat: number; lng: number };
-    Map: new (container: HTMLElement, options: any) => any;
-    Marker: new (options: any) => any;
-    CustomOverlay: new (options: any) => any;
-    ZoomControl: new () => any;
+    LatLng: new (lat: number, lng: number) => { 
+      getLat(): number;
+      getLng(): number;
+    };
+    Map: new (container: HTMLElement, options: KakaoMapOptions) => KakaoMap;
+    Marker: new (options: MarkerOptions) => {
+      setMap(map: KakaoMap | null): void;
+    };
+    CustomOverlay: new (options: CustomOverlayOptions) => {
+      setMap(map: KakaoMap | null): void;
+    };
+    ZoomControl: new () => unknown;
     ControlPosition: {
-      RIGHT: any;
+      RIGHT: unknown;
     };
     load: (callback: () => void) => void;
   };
@@ -25,62 +65,40 @@ declare global {
 
 export default function KakaoMap() {
   const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<KakaoMap | null>(null);
 
   useEffect(() => {
     if (!mapRef.current) return;
 
-    const loadMap = () => {
-      // 지도를 표시할 div
-      const container = mapRef.current;
-      if (!container) return;
-      
-      // 지도의 중심좌표 (서울시청)
-      const options = {
-        center: new window.kakao.maps.LatLng(37.5666805, 126.9784147),
-        level: 3, // 지도의 확대 레벨
+    const initializeMap = () => {
+      const center = new window.kakao.maps.LatLng(37.566826, 126.978656);
+      const options: KakaoMapOptions = {
+        center,
+        level: 3,
       };
 
-      // 지도 객체 생성
-      const map = new window.kakao.maps.Map(container, options);
+      const map = new window.kakao.maps.Map(mapRef.current!, options);
+      mapInstanceRef.current = map;
 
-      // 마커 생성
-      const markerPosition = new window.kakao.maps.LatLng(37.5666805, 126.9784147);
-      const marker = new window.kakao.maps.Marker({
-        position: markerPosition,
-      });
-
-      // 마커를 지도에 표시
-      marker.setMap(map);
-
-      // 커스텀 오버레이 내용
-      const content = '<div style="padding:5px;background:white;border-radius:4px;box-shadow:0 2px 4px rgba(0,0,0,0.1);">서울시청</div>';
-
-      // 커스텀 오버레이 생성
-      const customOverlay = new window.kakao.maps.CustomOverlay({
-        position: markerPosition,
-        content: content,
-        yAnchor: 2.5
-      });
-
-      // 커스텀 오버레이를 지도에 표시
-      customOverlay.setMap(map);
-
-      // 지도 컨트롤 추가
       const zoomControl = new window.kakao.maps.ZoomControl();
       map.addControl(zoomControl, window.kakao.maps.ControlPosition.RIGHT);
+
+      const marker = new window.kakao.maps.Marker({
+        position: center,
+        map: map,
+      });
+
+      const overlay = new window.kakao.maps.CustomOverlay({
+        position: center,
+        content: '<div style="padding:5px;background:white;border:1px solid #000;">서울시청</div>',
+        yAnchor: 1.5,
+        map: map,
+      });
     };
 
-    // 카카오맵 로드 확인
+    // 카카오맵 로드 확인 및 초기화
     if (window.kakao && window.kakao.maps) {
-      loadMap();
-    } else {
-      const script = document.createElement('script');
-      script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_API_KEY}&libraries=services,clusterer&autoload=false`;
-      script.async = true;
-      script.onload = () => {
-        window.kakao.maps.load(loadMap);
-      };
-      document.head.appendChild(script);
+      window.kakao.maps.load(initializeMap);
     }
   }, []);
 
@@ -89,9 +107,8 @@ export default function KakaoMap() {
       ref={mapRef}
       w="100%"
       h="100%"
-      position="absolute"
-      top="0"
-      left="0"
+      position="relative"
+      overflow="hidden"
     />
   );
 } 
