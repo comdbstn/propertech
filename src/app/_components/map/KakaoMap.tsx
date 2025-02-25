@@ -14,8 +14,18 @@ interface KakaoMapOptions {
   level: number;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+interface KakaoControl {
+  // 컨트롤 인터페이스
+}
+
+interface KakaoControlPosition {
+  RIGHT: number;
+  TOPRIGHT: number;
+}
+
 interface KakaoMap {
-  addControl(control: KakaoControl, position: KakaoControlPosition): void;
+  addControl(control: KakaoControl, position: number): void;
   getCenter(): KakaoLatLng;
   getLevel(): number;
   setLevel(level: number): void;
@@ -27,15 +37,6 @@ interface KakaoMarker {
 
 interface KakaoOverlay {
   setMap(map: KakaoMap | null): void;
-}
-
-interface KakaoControl {
-  // 컨트롤 인터페이스
-}
-
-interface KakaoControlPosition {
-  RIGHT: any;
-  TOPRIGHT: any;
 }
 
 interface KakaoMapsInstance {
