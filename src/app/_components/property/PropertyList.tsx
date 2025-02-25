@@ -1,50 +1,40 @@
-import { Box, VStack, Text, Flex, Image, useColorModeValue, Icon } from '@chakra-ui/react';
-import { FaMapMarkerAlt } from 'react-icons/fa';
+'use client';
 
-interface Property {
-  id: string;
-  type: string;
-  title: string;
-  price: number;
-  size: number;
-  address: string;
-  imageUrl: string;
+import { Box, VStack, Text, Flex, Image, useColorModeValue, Icon, Badge } from '@chakra-ui/react';
+import { FaMapMarkerAlt, FaCalendar, FaGavel } from 'react-icons/fa';
+import { AuctionProperty } from '@/app/_types/auction';
+
+interface PropertyListProps {
+  properties: AuctionProperty[];
+  selectedId?: string;
+  onPropertyClick?: (property: AuctionProperty) => void;
 }
 
-export default function PropertyList() {
+export default function PropertyList({ properties, selectedId, onPropertyClick }: PropertyListProps) {
   const bgColor = useColorModeValue('white', 'black');
   const borderColor = useColorModeValue('rgb(230, 230, 230)', 'rgb(38, 38, 38)');
   const hoverBgColor = useColorModeValue('rgb(245, 245, 245)', 'rgb(28, 28, 28)');
   const textColor = useColorModeValue('black', 'white');
   const mutedColor = useColorModeValue('gray.600', 'gray.400');
+  const selectedBgColor = useColorModeValue('blue.50', 'blue.900');
 
   const formatPrice = (price: number) => {
-    if (price >= 10000) {
-      return `${Math.floor(price / 10000)}억 ${price % 10000 > 0 ? `${price % 10000}만` : ''}`;
+    const billion = Math.floor(price / 100000000);
+    const million = Math.floor((price % 100000000) / 10000);
+    
+    if (billion > 0) {
+      return `${billion}억 ${million > 0 ? `${million}만` : ''}`;
     }
-    return `${price}만`;
+    return `${million}만`;
   };
 
-  const dummyProperties: Property[] = [
-    {
-      id: '1',
-      type: '매매',
-      title: '해커톤 아파트',
-      price: 40000,
-      size: 81.08,
-      address: '서울시 강남구',
-      imageUrl: 'https://images.unsplash.com/photo-1484154218962-a197022b5858',
-    },
-    {
-      id: '2',
-      type: '매매',
-      title: '푸미아크로뷰',
-      price: 35000,
-      size: 35.88,
-      address: '서울시 서초구',
-      imageUrl: 'https://images.unsplash.com/photo-1484154218962-a197022b5858',
-    },
-  ];
+  const formatDate = (date: Date) => {
+    return new Date(date).toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
 
   return (
     <VStack spacing={0} align="stretch" h="100%" bg={bgColor}>
@@ -60,7 +50,7 @@ export default function PropertyList() {
           color={textColor}
           letterSpacing="-0.03em"
         >
-          매물 리스트
+          경매 매물 ({properties.length})
         </Text>
       </Box>
 
@@ -71,15 +61,17 @@ export default function PropertyList() {
         className="minimal-scrollbar"
       >
         <VStack spacing={0} align="stretch">
-          {dummyProperties.map((property) => (
+          {properties.map((property) => (
             <Box
               key={property.id}
               p={6}
               borderBottom="1px solid"
               borderColor={borderColor}
-              _hover={{ bg: hoverBgColor }}
+              bg={property.id === selectedId ? selectedBgColor : undefined}
+              _hover={{ bg: property.id === selectedId ? selectedBgColor : hoverBgColor }}
               cursor="pointer"
               transition="all 0.2s"
+              onClick={() => onPropertyClick?.(property)}
             >
               <Flex gap={6}>
                 {/* 이미지 */}
@@ -93,8 +85,8 @@ export default function PropertyList() {
                   borderColor={borderColor}
                 >
                   <Image
-                    src={property.imageUrl}
-                    alt={property.title}
+                    src={property.images?.[0] || 'https://via.placeholder.com/500x300?text=No+Image'}
+                    alt={property.address}
                     w="100%"
                     h="100%"
                     objectFit="cover"
@@ -103,26 +95,50 @@ export default function PropertyList() {
 
                 {/* 정보 */}
                 <Box flex={1}>
+                  <Flex gap={2} mb={2} align="center">
+                    <Badge colorScheme={property.status === '진행중' ? 'green' : 'gray'}>
+                      {property.status}
+                    </Badge>
+                    <Text 
+                      fontSize="sm" 
+                      color={mutedColor}
+                    >
+                      {property.caseNumber}
+                    </Text>
+                  </Flex>
+                  
                   <Text 
                     fontSize="lg" 
                     fontWeight="bold" 
                     mb={2}
                     color={textColor}
                   >
-                    {formatPrice(property.price)}
+                    {formatPrice(property.minimumBidPrice)}
                   </Text>
+                  
                   <Text 
                     fontSize="md" 
                     mb={2}
                     color={textColor}
                   >
-                    {property.title}
+                    {property.propertyType} | {property.totalArea}㎡
                   </Text>
-                  <Flex align="center" color={mutedColor} fontSize="sm">
-                    <Icon as={FaMapMarkerAlt} mr={1} />
-                    <Text>{property.address}</Text>
-                    <Text mx={2}>·</Text>
-                    <Text>{property.size}m²</Text>
+                  
+                  <Flex direction="column" gap={1}>
+                    <Flex align="center" color={mutedColor} fontSize="sm">
+                      <Icon as={FaMapMarkerAlt} mr={1} />
+                      <Text>{property.address}</Text>
+                    </Flex>
+                    
+                    <Flex align="center" color={mutedColor} fontSize="sm">
+                      <Icon as={FaGavel} mr={1} />
+                      <Text>{property.court}</Text>
+                    </Flex>
+                    
+                    <Flex align="center" color={mutedColor} fontSize="sm">
+                      <Icon as={FaCalendar} mr={1} />
+                      <Text>입찰 {formatDate(property.auctionDate)}</Text>
+                    </Flex>
                   </Flex>
                 </Box>
               </Flex>
