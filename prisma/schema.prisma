@@ -1,0 +1,135 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 사용자 모델
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // 투자 선호도
+  investmentPreferences InvestmentPreference?
+  
+  // 관심 매물
+  savedProperties      SavedProperty[]
+  
+  // 검색 기록
+  searchHistory       SearchHistory[]
+}
+
+// 투자 선호도 모델
+model InvestmentPreference {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  investmentAmount  Float    // 투자 가능 금액
+  loanAmount        Float?   // 대출 가능 금액
+  targetReturn      Float    // 목표 수익률
+  preferredRegions  String[] // 선호 지역
+  propertyTypes     String[] // 선호 물건 유형
+  investmentPurpose String   // 투자 목적
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// 부동산 매물 모델
+model Property {
+  id              String   @id @default(cuid())
+  type            String   // 매물 유형 (경매/매매)
+  propertyType    String   // 물건 유형 (아파트, 단독주택 등)
+  title           String
+  description     String?
+  price           Float
+  size            Float
+  address         String
+  latitude        Float
+  longitude       Float
+  
+  // 상세 정보
+  rooms           Int?
+  bathrooms       Int?
+  parkingSpaces   Int?
+  yearBuilt       Int?
+  
+  // 투자 분석 정보
+  expectedReturn  Float?
+  riskLevel       String?
+  
+  // 경매 관련 정보 (경매 물건인 경우)
+  auctionInfo     AuctionInfo?
+  
+  // 관계
+  images          PropertyImage[]
+  savedBy         SavedProperty[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// 경매 정보 모델
+model AuctionInfo {
+  id              String   @id @default(cuid())
+  propertyId      String   @unique
+  property        Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  
+  auctionDate     DateTime
+  minimumBid      Float
+  currentBid      Float?
+  status          String
+  courtName       String
+  caseNumber      String
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// 매물 이미지 모델
+model PropertyImage {
+  id          String   @id @default(cuid())
+  propertyId  String
+  property    Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  url         String
+  order       Int
+  
+  createdAt   DateTime @default(now())
+}
+
+// 관심 매물 모델
+model SavedProperty {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  propertyId  String
+  property    Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  notes       String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@unique([userId, propertyId])
+}
+
+// 검색 기록 모델
+model SearchHistory {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  query       Json     // 검색 조건을 JSON으로 저장
+  
+  createdAt   DateTime @default(now())
+} 
