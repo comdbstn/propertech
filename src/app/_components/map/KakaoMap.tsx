@@ -3,73 +3,58 @@
 import { Box } from '@chakra-ui/react';
 import { useEffect, useRef } from 'react';
 
+// Kakao Maps 타입 정의
+interface KakaoLatLng {
+  getLat(): number;
+  getLng(): number;
+}
+
 interface KakaoMapOptions {
-  center: {
-    getLat(): number;
-    getLng(): number;
-  };
+  center: KakaoLatLng;
   level: number;
 }
 
-interface MarkerOptions {
-  position: {
-    getLat(): number;
-    getLng(): number;
-  };
-  map?: KakaoMap;
-}
-
-interface CustomOverlayOptions {
-  position: {
-    getLat(): number;
-    getLng(): number;
-  };
-  content: string;
-  yAnchor: number;
-  map?: KakaoMap;
-}
-
 interface KakaoMap {
-  addControl(control: unknown, position: unknown): void;
-  getCenter(): { getLat(): number; getLng(): number };
+  addControl(control: KakaoControl, position: KakaoControlPosition): void;
+  getCenter(): KakaoLatLng;
   getLevel(): number;
   setLevel(level: number): void;
 }
 
-interface KakaoMapType {
-  maps: {
-    LatLng: new (lat: number, lng: number) => any;
-    Map: new (container: HTMLElement, options: any) => any;
-    Marker: new (options: MarkerOptions) => {
-      setMap(map: KakaoMap | null): void;
-    };
-    CustomOverlay: new (options: CustomOverlayOptions) => {
-      setMap(map: KakaoMap | null): void;
-    };
-    ZoomControl: new () => any;
-    MapTypeControl: new () => any;
-    ControlPosition: {
-      RIGHT: any;
-      TOPRIGHT: any;
-    };
-    load: (callback: () => void) => void;
+interface KakaoMarker {
+  setMap(map: KakaoMap | null): void;
+}
+
+interface KakaoOverlay {
+  setMap(map: KakaoMap | null): void;
+}
+
+interface KakaoControl {}
+interface KakaoControlPosition {}
+
+interface KakaoMapsInstance {
+  LatLng: new (lat: number, lng: number) => KakaoLatLng;
+  Map: new (container: HTMLElement, options: KakaoMapOptions) => KakaoMap;
+  Marker: new (options: { position: KakaoLatLng; map?: KakaoMap }) => KakaoMarker;
+  CustomOverlay: new (options: {
+    position: KakaoLatLng;
+    content: string;
+    yAnchor: number;
+    map?: KakaoMap;
+  }) => KakaoOverlay;
+  ZoomControl: new () => KakaoControl;
+  MapTypeControl: new () => KakaoControl;
+  ControlPosition: {
+    RIGHT: KakaoControlPosition;
+    TOPRIGHT: KakaoControlPosition;
   };
+  load(callback: () => void): void;
 }
 
 declare global {
   interface Window {
     kakao: {
-      maps: {
-        LatLng: new (lat: number, lng: number) => any;
-        Map: new (container: HTMLElement, options: any) => any;
-        ZoomControl: new () => any;
-        MapTypeControl: new () => any;
-        ControlPosition: {
-          RIGHT: any;
-          TOPRIGHT: any;
-        };
-        load: (callback: () => void) => void;
-      };
+      maps: KakaoMapsInstance;
     };
   }
 }
@@ -77,34 +62,38 @@ declare global {
 export default function KakaoMap() {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<KakaoMap | null>(null);
-  const markerRef = useRef<{ setMap(map: KakaoMap | null): void } | null>(null);
-  const overlayRef = useRef<{ setMap(map: KakaoMap | null): void } | null>(null);
+  const markerRef = useRef<KakaoMarker | null>(null);
+  const overlayRef = useRef<KakaoOverlay | null>(null);
 
   useEffect(() => {
     const loadMap = () => {
       if (!mapRef.current) return;
 
-      const options = {
-        center: new window.kakao.maps.LatLng(37.566826, 126.978656),
+      const maps = window.kakao.maps;
+      const center = new maps.LatLng(37.566826, 126.978656);
+      const options: KakaoMapOptions = {
+        center,
         level: 3
       };
 
-      const map = new window.kakao.maps.Map(mapRef.current, options);
+      const map = new maps.Map(mapRef.current, options);
       mapInstanceRef.current = map;
 
       // 줌 컨트롤 추가
-      const zoomControl = new window.kakao.maps.ZoomControl();
-      map.addControl(zoomControl, window.kakao.maps.ControlPosition.RIGHT);
+      const zoomControl = new maps.ZoomControl();
+      map.addControl(zoomControl, maps.ControlPosition.RIGHT);
 
       // 지도 타입 컨트롤 추가
-      const mapTypeControl = new window.kakao.maps.MapTypeControl();
-      map.addControl(mapTypeControl, window.kakao.maps.ControlPosition.TOPRIGHT);
+      const mapTypeControl = new maps.MapTypeControl();
+      map.addControl(mapTypeControl, maps.ControlPosition.TOPRIGHT);
 
-      markerRef.current = new window.kakao.maps.Marker({
-        position: options.center,
-        map: map,
+      // 마커 추가
+      markerRef.current = new maps.Marker({
+        position: center,
+        map
       });
 
+      // 오버레이 추가
       const overlayContent = `
         <div style="
           padding: 5px 10px;
@@ -121,16 +110,16 @@ export default function KakaoMap() {
         </div>
       `;
 
-      overlayRef.current = new window.kakao.maps.CustomOverlay({
-        position: options.center,
+      overlayRef.current = new maps.CustomOverlay({
+        position: center,
         content: overlayContent,
         yAnchor: 1.0,
-        map: map,
+        map
       });
     };
 
     // 카카오맵 스크립트 로딩 확인
-    if (window.kakao && window.kakao.maps) {
+    if (window.kakao?.maps) {
       loadMap();
     } else {
       const script = document.createElement('script');
@@ -144,7 +133,7 @@ export default function KakaoMap() {
       document.head.appendChild(script);
     }
 
-    // 컴포넌트 언마운트 시 스크립트 제거
+    // 컴포넌트 언마운트 시 정리
     return () => {
       const script = document.querySelector('script[src*="dapi.kakao.com/v2/maps/sdk.js"]');
       if (script) {
