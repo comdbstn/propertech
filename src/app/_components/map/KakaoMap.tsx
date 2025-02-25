@@ -29,33 +29,36 @@ interface KakaoOverlay {
   setMap(map: KakaoMap | null): void;
 }
 
-interface KakaoControl {}
-interface KakaoControlPosition {}
+interface KakaoControl {
+  // 컨트롤 인터페이스
+}
+
+interface KakaoControlPosition {
+  RIGHT: any;
+  TOPRIGHT: any;
+}
 
 interface KakaoMapsInstance {
-  LatLng: new (lat: number, lng: number) => KakaoLatLng;
-  Map: new (container: HTMLElement, options: KakaoMapOptions) => KakaoMap;
-  Marker: new (options: { position: KakaoLatLng; map?: KakaoMap }) => KakaoMarker;
-  CustomOverlay: new (options: {
-    position: KakaoLatLng;
-    content: string;
-    yAnchor: number;
-    map?: KakaoMap;
-  }) => KakaoOverlay;
-  ZoomControl: new () => KakaoControl;
-  MapTypeControl: new () => KakaoControl;
-  ControlPosition: {
-    RIGHT: KakaoControlPosition;
-    TOPRIGHT: KakaoControlPosition;
+  maps: {
+    LatLng: new (lat: number, lng: number) => KakaoLatLng;
+    Map: new (container: HTMLElement, options: KakaoMapOptions) => KakaoMap;
+    ZoomControl: new () => KakaoControl;
+    MapTypeControl: new () => KakaoControl;
+    ControlPosition: KakaoControlPosition;
+    Marker: new (options: { position: KakaoLatLng; map?: KakaoMap }) => KakaoMarker;
+    CustomOverlay: new (options: {
+      position: KakaoLatLng;
+      content: string;
+      yAnchor: number;
+      map?: KakaoMap;
+    }) => KakaoOverlay;
+    load(callback: () => void): void;
   };
-  load(callback: () => void): void;
 }
 
 declare global {
   interface Window {
-    kakao: {
-      maps: KakaoMapsInstance;
-    };
+    kakao: KakaoMapsInstance;
   }
 }
 
