@@ -3,7 +3,6 @@
 import { Box, Flex, useColorModeValue } from '@chakra-ui/react';
 import { useState } from 'react';
 import Navigator from './Navigator';
-import AIConsultingPanel from '../ai/AIConsultingPanel';
 import KakaoMap from '../map/KakaoMap';
 import PropertyList from '../property/PropertyList';
 import { AuctionProperty } from '@/app/_types/auction';
@@ -12,7 +11,7 @@ export default function MainLayout() {
   const bgColor = useColorModeValue('gray.50', 'gray.900');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
   const [selectedProperty, setSelectedProperty] = useState<AuctionProperty | null>(null);
-  const [properties, setProperties] = useState<AuctionProperty[]>([]);
+  const [properties] = useState<AuctionProperty[]>([]);
 
   const handlePropertyClick = (property: AuctionProperty) => {
     setSelectedProperty(property);

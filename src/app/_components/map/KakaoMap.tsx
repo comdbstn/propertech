@@ -1,7 +1,7 @@
 'use client';
 
 import { Box } from '@chakra-ui/react';
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { AuctionProperty } from '@/app/_types/auction';
 import { generateDummyProperties } from '@/app/_utils/dummyData';
 import MapControls, { MapMode } from './MapControls';
@@ -23,9 +23,18 @@ interface KakaoMapOptions {
   level: number;
 }
 
+interface KakaoPolygonOptions {
+  path: KakaoLatLng[];
+  strokeWeight: number;
+  strokeColor: string;
+  strokeOpacity: number;
+  fillColor: string;
+  fillOpacity: number;
+}
+
 interface KakaoPolygon {
   setMap(map: KakaoMap | null): void;
-  setOptions(options: { fillColor: string; fillOpacity: number; strokeWeight: number; strokeColor: string; }): void;
+  setOptions(options: Partial<KakaoPolygonOptions>): void;
 }
 
 type KakaoControl = object;
@@ -54,8 +63,8 @@ interface KakaoOverlay {
 }
 
 interface KakaoMapEvent {
-  addListener(target: KakaoMarker | KakaoMap, type: string, handler: () => void): void;
-  removeListener(target: KakaoMarker | KakaoMap, type: string, handler: () => void): void;
+  addListener(target: KakaoMarker | KakaoMap | KakaoPolygon, type: string, handler: () => void): void;
+  removeListener(target: KakaoMarker | KakaoMap | KakaoPolygon, type: string, handler: () => void): void;
 }
 
 interface KakaoMaps {
@@ -71,7 +80,7 @@ interface KakaoMaps {
     yAnchor: number;
     map?: KakaoMap;
   }) => KakaoOverlay;
-  Polygon: new (path: KakaoLatLng[], options?: any) => KakaoPolygon;
+  Polygon: new (path: KakaoLatLng[], options?: Partial<KakaoPolygonOptions>) => KakaoPolygon;
   load(callback: () => void): void;
   event: KakaoMapEvent;
 }
@@ -187,7 +196,7 @@ export default function KakaoMap({ onMarkerClick }: KakaoMapProps) {
     // 마커 생성
     const marker = new window.kakao.maps.Marker({
       position,
-      map: mode === 'property' ? map : null,
+      map: mode === 'property' ? map : undefined,
     });
 
     // 오버레이 컨텐츠
@@ -209,7 +218,7 @@ export default function KakaoMap({ onMarkerClick }: KakaoMapProps) {
     const overlay = new window.kakao.maps.CustomOverlay({
       content,
       position,
-      map: mode === 'property' ? map : null,
+      map: mode === 'property' ? map : undefined,
       yAnchor: 2.2,
     });
 
@@ -278,8 +287,7 @@ export default function KakaoMap({ onMarkerClick }: KakaoMapProps) {
       const competitionScore = calculateCompetitionScore(props);
       const color = getColorByCompetitionScore(competitionScore);
 
-      const polygon = new window.kakao.maps.Polygon({
-        path,
+      const polygon = new window.kakao.maps.Polygon(path, {
         strokeWeight: 2,
         strokeColor: color,
         strokeOpacity: mode === 'territory' ? 0.5 : 0.2,
@@ -310,49 +318,12 @@ export default function KakaoMap({ onMarkerClick }: KakaoMapProps) {
     setTerritories(newTerritories);
   };
 
-  // 지도 초기화
-  useEffect(() => {
-    if (!mapRef.current) return;
-
-    const apiKey = process.env.NEXT_PUBLIC_KAKAO_MAP_API_KEY;
-    if (!apiKey) {
-      console.error('카카오맵 API 키가 설정되지 않았습니다.');
-      return;
-    }
-
-    // 스크립트가 이미 로드되어 있는지 확인
-    const script = document.querySelector(`script[src*="kakao.maps.js"]`);
-    if (script) {
-      console.log('카카오맵 스크립트가 이미 로드되어 있습니다.');
-      initializeMap();
-      return;
-    }
-
-    // 스크립트 로드
-    const mapScript = document.createElement('script');
-    mapScript.async = true;
-    mapScript.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&autoload=false`;
-
-    mapScript.addEventListener('load', () => {
-      window.kakao.maps.load(() => {
-        console.log('카카오맵 API가 로드되었습니다.');
-        initializeMap();
-      });
-    });
-
-    document.head.appendChild(mapScript);
-
-    return () => {
-      // 스크립트 제거는 하지 않음 (다른 컴포넌트에서 재사용 가능)
-    };
-  }, []);
-
-  // 지도 초기화 함수
-  const initializeMap = () => {
+  // initializeMap을 useCallback으로 감싸서 의존성 문제 해결
+  const initializeMap = useCallback(() => {
     if (!mapRef.current) return;
 
     const options = {
-      center: new window.kakao.maps.LatLng(37.5040, 127.0440), // 강남역 중심
+      center: new window.kakao.maps.LatLng(37.5040, 127.0440),
       level: 5,
     };
 
@@ -392,7 +363,37 @@ export default function KakaoMap({ onMarkerClick }: KakaoMapProps) {
 
     // 초기 영역 분석 실행
     analyzeTerritories(map);
-  };
+  }, []);
+
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    const apiKey = process.env.NEXT_PUBLIC_KAKAO_MAP_API_KEY;
+    if (!apiKey) {
+      console.error('카카오맵 API 키가 설정되지 않았습니다.');
+      return;
+    }
+
+    const script = document.querySelector(`script[src*="kakao.maps.js"]`);
+    if (script) {
+      console.log('카카오맵 스크립트가 이미 로드되어 있습니다.');
+      initializeMap();
+      return;
+    }
+
+    const mapScript = document.createElement('script');
+    mapScript.async = true;
+    mapScript.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&autoload=false`;
+
+    mapScript.addEventListener('load', () => {
+      window.kakao.maps.load(() => {
+        console.log('카카오맵 API가 로드되었습니다.');
+        initializeMap();
+      });
+    });
+
+    document.head.appendChild(mapScript);
+  }, [initializeMap]);
 
   // 컴포넌트 언마운트 시 마커와 오버레이 제거
   useEffect(() => {
