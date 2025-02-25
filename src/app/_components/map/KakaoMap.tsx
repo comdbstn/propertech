@@ -144,6 +144,7 @@ export default function KakaoMap({ onMarkerClick, properties = [] }: KakaoMapPro
   const [competitionFilter, setCompetitionFilter] = useState(0);
   const [selectedTerritory, setSelectedTerritory] = useState<Territory | null>(null);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const mapInstance = useRef<KakaoMap | null>(null);
 
   // 경쟁 강도 계산 함수 메모이제이션
   const calculateCompetitionScore = useMemo(() => (properties: AuctionProperty[]): number => {
@@ -364,7 +365,7 @@ export default function KakaoMap({ onMarkerClick, properties = [] }: KakaoMapPro
 
   // 지도 초기화
   const initializeMap = useCallback(() => {
-    if (!mapRef.current || !window.kakao?.maps) return;
+    if (!mapRef.current || !window.kakao?.maps || mapInstance.current) return;
 
     try {
       const options = {
@@ -372,63 +373,68 @@ export default function KakaoMap({ onMarkerClick, properties = [] }: KakaoMapPro
         level: 5,
       };
 
-      const mapInstance = new window.kakao.maps.Map(mapRef.current, options);
+      mapInstance.current = new window.kakao.maps.Map(mapRef.current, options);
       
-      // 지도 컨트롤 추가 - 성능 최적화
+      // 지도 컨트롤 추가
       const zoomControl = new window.kakao.maps.ZoomControl();
       const mapTypeControl = new window.kakao.maps.MapTypeControl();
-      mapInstance.addControl(zoomControl, window.kakao.maps.ControlPosition.RIGHT);
-      mapInstance.addControl(mapTypeControl, window.kakao.maps.ControlPosition.TOPRIGHT);
+      mapInstance.current.addControl(zoomControl, window.kakao.maps.ControlPosition.RIGHT);
+      mapInstance.current.addControl(mapTypeControl, window.kakao.maps.ControlPosition.TOPRIGHT);
 
-      setMap(mapInstance);
+      setMap(mapInstance.current);
       setIsMapLoaded(true);
 
       // 디바운스된 이벤트 핸들러
       let timeoutId: NodeJS.Timeout;
       const handleMapChange = () => {
+        if (!mapInstance.current) return;
         clearTimeout(timeoutId);
         timeoutId = setTimeout(() => {
-          analyzeTerritories(mapInstance);
+          analyzeTerritories(mapInstance.current!);
         }, 300);
       };
 
       // 이벤트 리스너 등록
-      window.kakao.maps.event.addListener(mapInstance, 'zoom_changed', handleMapChange);
-      window.kakao.maps.event.addListener(mapInstance, 'dragend', handleMapChange);
+      window.kakao.maps.event.addListener(mapInstance.current, 'zoom_changed', handleMapChange);
+      window.kakao.maps.event.addListener(mapInstance.current, 'dragend', handleMapChange);
 
-      // 기존 마커와 오버레이 제거
-      markers.forEach(marker => marker?.setMap(null));
-      overlays.forEach(overlay => overlay?.setMap(null));
+      // 초기 마커와 영역 생성
+      createMarkersAndOverlays();
+      analyzeTerritories(mapInstance.current);
 
-      // 새로운 마커와 오버레이 생성 - 배치 처리
-      const newMarkers: KakaoMarker[] = [];
-      const newOverlays: KakaoOverlay[] = [];
-      const cleanupFunctions: Array<() => void> = [];
-
-      properties.forEach(property => {
-        const result = createMarkerAndOverlay(property, mapInstance);
-        if (result.marker && result.overlay) {
-          newMarkers.push(result.marker);
-          newOverlays.push(result.overlay);
-          if (result.cleanup) {
-            cleanupFunctions.push(result.cleanup);
-          }
-        }
-      });
-
-      setMarkers(newMarkers);
-      setOverlays(newOverlays);
-      analyzeTerritories(mapInstance);
-
-      // 클린업 함수 반환
       return () => {
         clearTimeout(timeoutId);
-        cleanupFunctions.forEach(cleanup => cleanup());
+        if (mapInstance.current) {
+          mapInstance.current = null;
+        }
       };
     } catch (error) {
       console.error('지도 초기화 중 오류 발생:', error);
     }
-  }, [properties, analyzeTerritories, createMarkerAndOverlay, markers, overlays]);
+  }, [analyzeTerritories]);
+
+  // 마커와 오버레이 생성
+  const createMarkersAndOverlays = useCallback(() => {
+    if (!mapInstance.current) return;
+
+    // 기존 마커와 오버레이 제거
+    markers.forEach(marker => marker?.setMap(null));
+    overlays.forEach(overlay => overlay?.setMap(null));
+
+    const newMarkers: KakaoMarker[] = [];
+    const newOverlays: KakaoOverlay[] = [];
+
+    properties.forEach(property => {
+      const result = createMarkerAndOverlay(property, mapInstance.current!);
+      if (result.marker && result.overlay) {
+        newMarkers.push(result.marker);
+        newOverlays.push(result.overlay);
+      }
+    });
+
+    setMarkers(newMarkers);
+    setOverlays(newOverlays);
+  }, [properties, createMarkerAndOverlay]);
 
   // 카카오맵 로드
   useEffect(() => {
@@ -437,17 +443,19 @@ export default function KakaoMap({ onMarkerClick, properties = [] }: KakaoMapPro
       return;
     }
 
-    if (window.kakao.maps.load) {
-      window.kakao.maps.load(() => {
-        console.log('카카오맵 API 로드 완료');
-        initializeMap();
-      });
-    } else {
+    if (!mapInstance.current) {
       initializeMap();
     }
   }, [initializeMap]);
 
-  // 컴포넌트 언마운트 시 마커와 오버레이 제거
+  // properties가 변경될 때만 마커와 오버레이 업데이트
+  useEffect(() => {
+    if (mapInstance.current && isMapLoaded) {
+      createMarkersAndOverlays();
+    }
+  }, [properties, isMapLoaded, createMarkersAndOverlays]);
+
+  // 컴포넌트 언마운트 시 정리
   useEffect(() => {
     return () => {
       markers.forEach(marker => marker.setMap(null));
@@ -457,6 +465,9 @@ export default function KakaoMap({ onMarkerClick, properties = [] }: KakaoMapPro
           territory.polygon.setMap(null);
         }
       });
+      if (mapInstance.current) {
+        mapInstance.current = null;
+      }
     };
   }, [markers, overlays, territories]);
 
