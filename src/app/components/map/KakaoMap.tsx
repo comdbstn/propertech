@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Map, MapMarker } from 'react-kakao-maps-sdk';
 
 export default function KakaoMap() {
