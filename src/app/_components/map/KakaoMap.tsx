@@ -36,33 +36,33 @@ interface KakaoOverlay {
   setMap(map: KakaoMap | null): void;
 }
 
-interface KakaoMapsInstance {
-  maps: {
-    LatLng: new (lat: number, lng: number) => KakaoLatLng;
-    Map: new (container: HTMLElement, options: KakaoMapOptions) => KakaoMap;
-    ZoomControl: new () => KakaoControl;
-    MapTypeControl: new () => KakaoControl;
-    ControlPosition: KakaoControlPosition;
-    Marker: new (options: { position: KakaoLatLng; map?: KakaoMap }) => KakaoMarker;
-    CustomOverlay: new (options: {
-      position: KakaoLatLng;
-      content: string;
-      yAnchor: number;
-      map?: KakaoMap;
-    }) => KakaoOverlay;
-    load(callback: () => void): void;
-  };
+interface KakaoMaps {
+  LatLng: new (lat: number, lng: number) => KakaoLatLng;
+  Map: new (container: HTMLElement, options: KakaoMapOptions) => KakaoMap;
+  ZoomControl: new () => KakaoControl;
+  MapTypeControl: new () => KakaoControl;
+  ControlPosition: KakaoControlPosition;
+  Marker: new (options: { position: KakaoLatLng; map?: KakaoMap }) => KakaoMarker;
+  CustomOverlay: new (options: {
+    position: KakaoLatLng;
+    content: string;
+    yAnchor: number;
+    map?: KakaoMap;
+  }) => KakaoOverlay;
+  load(callback: () => void): void;
 }
 
 declare global {
   interface Window {
-    kakao: any;
+    kakao: {
+      maps: KakaoMaps;
+    };
   }
 }
 
 export default function KakaoMap() {
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<any>(null);
+  const mapInstanceRef = useRef<KakaoMap | null>(null);
   const markerRef = useRef<KakaoMarker | null>(null);
   const overlayRef = useRef<KakaoOverlay | null>(null);
 
