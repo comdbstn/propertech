@@ -28,11 +28,19 @@ export default function AIConsultingPanel() {
   ]);
   const [input, setInput] = useState('');
   
-  const bgColor = useColorModeValue('white', 'gray.900');
-  const borderColor = useColorModeValue('gray.200', 'gray.700');
-  const bubbleBgUser = useColorModeValue('gray.900', 'gray.100');
+  const bgGradient = useColorModeValue(
+    'linear(to-br, purple.50, white)',
+    'linear(to-br, purple.900, gray.900)'
+  );
+  const headerBgGradient = useColorModeValue(
+    'linear(to-r, purple.400, blue.500)',
+    'linear(to-r, purple.600, blue.700)'
+  );
+  const borderColor = useColorModeValue('purple.100', 'purple.700');
+  const bubbleBgUser = useColorModeValue('purple.500', 'purple.200');
   const bubbleTextUser = useColorModeValue('white', 'gray.900');
-  const bubbleBgAI = useColorModeValue('gray.100', 'gray.700');
+  const bubbleBgAI = useColorModeValue('white', 'whiteAlpha.200');
+  const bubbleBorderAI = useColorModeValue('purple.100', 'purple.600');
 
   const handleSendMessage = async () => {
     if (!input.trim()) return;
@@ -52,19 +60,23 @@ export default function AIConsultingPanel() {
   };
 
   return (
-    <Box h="100%" display="flex" flexDirection="column" bg={bgColor}>
+    <Box h="100%" display="flex" flexDirection="column" bgGradient={bgGradient}>
       {/* 헤더 */}
-      <Box p={6} borderBottom="1px" borderColor={borderColor}>
+      <Box p={6} bgGradient={headerBgGradient}>
         <HStack spacing={4}>
           <Avatar 
-            icon={<FaRobot />} 
-            bg="gray.900" 
-            color="white"
-            size="sm"
+            icon={<FaRobot size={20} />} 
+            bg="whiteAlpha.900" 
+            color="purple.500"
+            size="md"
           />
-          <VStack align="start" spacing={0}>
-            <Text fontFamily="var(--font-serif)" fontSize="lg" fontWeight="bold">AI 부동산 상담사</Text>
-            <Text fontSize="sm" color="gray.500" fontFamily="var(--font-sans)">실시간 맞춤형 투자 상담</Text>
+          <VStack align="start" spacing={1}>
+            <Text color="white" fontFamily="var(--font-serif)" fontSize="xl" fontWeight="bold">
+              AI 부동산 상담사
+            </Text>
+            <Text fontSize="sm" color="whiteAlpha.900" fontFamily="var(--font-sans)">
+              실시간 맞춤형 투자 상담
+            </Text>
           </VStack>
         </HStack>
       </Box>
@@ -76,7 +88,6 @@ export default function AIConsultingPanel() {
         spacing={6}
         p={6}
         align="stretch"
-        bg={useColorModeValue('gray.50', 'gray.800')}
       >
         {messages.map((msg, idx) => (
           <Flex
@@ -85,9 +96,9 @@ export default function AIConsultingPanel() {
           >
             {msg.role === 'assistant' && (
               <Avatar
-                size="xs"
+                size="sm"
                 icon={<FaRobot />}
-                bg="gray.900"
+                bg="purple.500"
                 color="white"
                 mr={2}
               />
@@ -95,12 +106,15 @@ export default function AIConsultingPanel() {
             <Box
               maxW="80%"
               p={4}
-              borderRadius="md"
+              borderRadius="lg"
               bg={msg.role === 'user' ? bubbleBgUser : bubbleBgAI}
               color={msg.role === 'user' ? bubbleTextUser : 'inherit'}
+              border="1px solid"
+              borderColor={msg.role === 'user' ? 'transparent' : bubbleBorderAI}
               fontSize="sm"
               letterSpacing="-0.01em"
               lineHeight="1.7"
+              shadow="sm"
             >
               <Text>{msg.content}</Text>
             </Box>
@@ -116,11 +130,11 @@ export default function AIConsultingPanel() {
             onChange={(e) => setInput(e.target.value)}
             placeholder="메시지를 입력하세요..."
             size="md"
-            borderRadius="md"
+            borderRadius="full"
             borderColor={borderColor}
             _focus={{
-              borderColor: 'gray.900',
-              boxShadow: 'none',
+              borderColor: 'purple.400',
+              boxShadow: '0 0 0 1px var(--chakra-colors-purple-400)',
             }}
             onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
           />
@@ -128,12 +142,8 @@ export default function AIConsultingPanel() {
             aria-label="Send message"
             icon={<FaPaperPlane />}
             onClick={handleSendMessage}
-            bg="gray.900"
-            color="white"
-            _hover={{
-              bg: 'gray.700',
-            }}
-            borderRadius="md"
+            colorScheme="purple"
+            borderRadius="full"
           />
         </HStack>
       </Box>
