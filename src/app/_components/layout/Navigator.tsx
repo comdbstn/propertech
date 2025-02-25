@@ -1,5 +1,5 @@
 import { Box, HStack, Button, Icon, Tooltip, useColorModeValue, Text, Flex } from '@chakra-ui/react';
-import { FaSearch, FaHeart, FaHistory, FaCog, FaChartLine } from 'react-icons/fa';
+import { FaSearch, FaHeart, FaHistory, FaCog, FaChartLine, FaBuilding } from 'react-icons/fa';
 import { useRouter } from 'next/navigation';
 
 export default function Navigator() {
@@ -45,7 +45,20 @@ export default function Navigator() {
           alignItems="center"
           height="auto"
           _hover={{ opacity: 0.8 }}
+          gap={2}
         >
+          <Box
+            bg="blue.500"
+            w="32px"
+            h="32px"
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            borderRadius="md"
+            color="white"
+          >
+            <Icon as={FaBuilding} boxSize={5} />
+          </Box>
           <Text
             fontSize="xl"
             fontWeight="bold"
@@ -61,7 +74,7 @@ export default function Navigator() {
         </Button>
 
         {/* 네비게이션 메뉴 */}
-        <HStack spacing={1}>
+        <HStack spacing={1} ml="auto">
           {navItems.map((item) => (
             <Tooltip 
               key={item.path} 
