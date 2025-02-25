@@ -91,10 +91,26 @@ export default function KakaoMap() {
           map: map,
         });
 
+        const overlayContent = `
+          <div style="
+            padding: 5px 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            white-space: nowrap;
+            transform: translateY(-100%);
+            margin-top: -10px;
+          ">
+            4억 4,000만
+          </div>
+        `;
+
         overlayRef.current = new window.kakao.maps.CustomOverlay({
           position: center,
-          content: '<div style="padding:5px;background:white;border:1px solid #000;">서울시청</div>',
-          yAnchor: 1.5,
+          content: overlayContent,
+          yAnchor: 1.0,
           map: map,
         });
       } catch (error) {
