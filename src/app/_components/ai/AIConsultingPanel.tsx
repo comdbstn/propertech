@@ -6,11 +6,8 @@ import {
   HStack,
   Text,
   Input,
-  Button,
   Avatar,
-  Divider,
   useColorModeValue,
-  Textarea,
   IconButton,
   Flex,
 } from '@chakra-ui/react';
