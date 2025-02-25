@@ -38,20 +38,19 @@ interface KakaoMap {
 
 interface KakaoMapType {
   maps: {
-    LatLng: new (lat: number, lng: number) => { 
-      getLat(): number;
-      getLng(): number;
-    };
-    Map: new (container: HTMLElement, options: KakaoMapOptions) => KakaoMap;
+    LatLng: new (lat: number, lng: number) => any;
+    Map: new (container: HTMLElement, options: any) => any;
     Marker: new (options: MarkerOptions) => {
       setMap(map: KakaoMap | null): void;
     };
     CustomOverlay: new (options: CustomOverlayOptions) => {
       setMap(map: KakaoMap | null): void;
     };
-    ZoomControl: new () => unknown;
+    ZoomControl: new () => any;
+    MapTypeControl: new () => any;
     ControlPosition: {
-      RIGHT: unknown;
+      RIGHT: any;
+      TOPRIGHT: any;
     };
     load: (callback: () => void) => void;
   };
@@ -59,7 +58,19 @@ interface KakaoMapType {
 
 declare global {
   interface Window {
-    kakao: KakaoMapType;
+    kakao: {
+      maps: {
+        LatLng: new (lat: number, lng: number) => any;
+        Map: new (container: HTMLElement, options: any) => any;
+        ZoomControl: new () => any;
+        MapTypeControl: new () => any;
+        ControlPosition: {
+          RIGHT: any;
+          TOPRIGHT: any;
+        };
+        load: (callback: () => void) => void;
+      };
+    };
   }
 }
 
@@ -70,74 +81,75 @@ export default function KakaoMap() {
   const overlayRef = useRef<{ setMap(map: KakaoMap | null): void } | null>(null);
 
   useEffect(() => {
-    const initMap = () => {
-      if (!mapRef.current || !window.kakao?.maps) return;
+    const loadMap = () => {
+      if (!mapRef.current) return;
 
-      try {
-        window.kakao.maps.load(() => {
-          if (!mapRef.current) return;
+      const options = {
+        center: new window.kakao.maps.LatLng(37.566826, 126.978656),
+        level: 3
+      };
 
-          const center = new window.kakao.maps.LatLng(37.566826, 126.978656);
-          const options: KakaoMapOptions = {
-            center,
-            level: 3,
-          };
+      const map = new window.kakao.maps.Map(mapRef.current, options);
+      mapInstanceRef.current = map;
 
-          const map = new window.kakao.maps.Map(mapRef.current, options);
-          mapInstanceRef.current = map;
+      // 줌 컨트롤 추가
+      const zoomControl = new window.kakao.maps.ZoomControl();
+      map.addControl(zoomControl, window.kakao.maps.ControlPosition.RIGHT);
 
-          const zoomControl = new window.kakao.maps.ZoomControl();
-          map.addControl(zoomControl, window.kakao.maps.ControlPosition.RIGHT);
+      // 지도 타입 컨트롤 추가
+      const mapTypeControl = new window.kakao.maps.MapTypeControl();
+      map.addControl(mapTypeControl, window.kakao.maps.ControlPosition.TOPRIGHT);
 
-          markerRef.current = new window.kakao.maps.Marker({
-            position: center,
-            map: map,
-          });
+      markerRef.current = new window.kakao.maps.Marker({
+        position: options.center,
+        map: map,
+      });
 
-          const overlayContent = `
-            <div style="
-              padding: 5px 10px;
-              background: rgba(0, 0, 0, 0.8);
-              color: white;
-              border-radius: 4px;
-              font-size: 12px;
-              font-weight: bold;
-              white-space: nowrap;
-              transform: translateY(-100%);
-              margin-top: -10px;
-            ">
-              4억 4,000만
-            </div>
-          `;
+      const overlayContent = `
+        <div style="
+          padding: 5px 10px;
+          background: rgba(0, 0, 0, 0.8);
+          color: white;
+          border-radius: 4px;
+          font-size: 12px;
+          font-weight: bold;
+          white-space: nowrap;
+          transform: translateY(-100%);
+          margin-top: -10px;
+        ">
+          4억 4,000만
+        </div>
+      `;
 
-          overlayRef.current = new window.kakao.maps.CustomOverlay({
-            position: center,
-            content: overlayContent,
-            yAnchor: 1.0,
-            map: map,
-          });
-        });
-      } catch (error) {
-        console.error('카카오맵 초기화 중 오류 발생:', error);
-      }
+      overlayRef.current = new window.kakao.maps.CustomOverlay({
+        position: options.center,
+        content: overlayContent,
+        yAnchor: 1.0,
+        map: map,
+      });
     };
 
-    // 카카오맵 API가 로드된 후 초기화
-    if (window.kakao?.maps) {
-      initMap();
+    // 카카오맵 스크립트 로딩 확인
+    if (window.kakao && window.kakao.maps) {
+      loadMap();
     } else {
-      const checkKakaoMap = setInterval(() => {
-        if (window.kakao?.maps) {
-          initMap();
-          clearInterval(checkKakaoMap);
-        }
-      }, 100);
-
-      // 10초 후에도 로드되지 않으면 인터벌 제거
-      setTimeout(() => clearInterval(checkKakaoMap), 10000);
+      const script = document.createElement('script');
+      script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_API_KEY}&autoload=false`;
+      script.async = true;
+      
+      script.onload = () => {
+        window.kakao.maps.load(loadMap);
+      };
+      
+      document.head.appendChild(script);
     }
 
+    // 컴포넌트 언마운트 시 스크립트 제거
     return () => {
+      const script = document.querySelector('script[src*="dapi.kakao.com/v2/maps/sdk.js"]');
+      if (script) {
+        document.head.removeChild(script);
+      }
       if (markerRef.current) {
         markerRef.current.setMap(null);
       }
@@ -154,6 +166,7 @@ export default function KakaoMap() {
       h="100%"
       position="relative"
       overflow="hidden"
+      id="map"
     />
   );
 } 
